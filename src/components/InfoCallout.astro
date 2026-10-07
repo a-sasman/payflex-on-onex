@@ -1,0 +1,21 @@
+---
+interface Props {
+  title: string;
+  tone?: "navy" | "pale" | "slate";
+  icon?: boolean;
+}
+
+const { title, tone = "pale", icon = true } = Astro.props as Props;
+---
+
+<aside class:list={["info-callout", `info-callout--${tone}`]}>
+  {icon && (
+    <svg class="callout-icon" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <path d="M23 45h18M25 51h14M28 57h8M20 27a12 12 0 1 1 24 0c0 7-5 9-7 14H27c-2-5-7-7-7-14ZM32 4V0M10 12 5 7M54 12l5-5M8 29H1M63 29h-7" />
+    </svg>
+  )}
+  <div>
+    <h3>{title}</h3>
+    <slot />
+  </div>
+</aside>

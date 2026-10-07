@@ -1,0 +1,13 @@
+---
+interface Props { title: string; before: string[]; missing: string; after: string[]; }
+const { title, before, missing, after } = Astro.props as Props;
+---
+
+<missing-step-reveal class="interaction-block">
+  <h3>{title}</h3>
+  <ol class="missing-step-list">
+    {before.map((step) => <li>{step}</li>)}
+    <li>{missing}</li>
+    {after.map((step) => <li>{step}</li>)}
+  </ol>
+</missing-step-reveal>

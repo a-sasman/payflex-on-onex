@@ -1,157 +1,193 @@
-export interface HeritageMilestone {
-  id: string;
-  year?: string;
-  title: string;
-  detail: string;
-  customerMeaning: string;
-  image: string;
-  imageAlt: string;
-}
-
-export interface BrandValue {
-  id: string;
-  label: string;
-  message: string;
-}
-
-export interface ConversationExample {
-  number: number;
-  customer: string;
-  response: string;
-}
-
 export const courseData = {
   meta: {
-    title: "Champion at TFG: The Brand Worth Talking About",
-    description: "Meet Champion, The Original Sportswear Brand™, and learn how to connect its heritage, values, and everyday style to Customer needs.",
+    title: "Payflex on oneX",
+    description: "Learn how to apply the Payflex rules correctly on oneX.",
   },
   nav: [
-    { id: "overview", label: "Overview" },
-    { id: "meet-champion", label: "Meet Champion" },
-    { id: "why-champion", label: "Why Champion at TFG" },
-    { id: "champion-heritage", label: "Champion Heritage" },
-    { id: "brand-dna", label: "Brand DNA" },
-    { id: "champion-knowledge", label: "Champion Knowledge" },
+    { id: "welcome", label: "Welcome" },
+    { id: "five-rules", label: "Five Rules" },
+    { id: "exclusions", label: "Exclusions" },
+    { id: "returns", label: "Returns" },
+    { id: "payflex-missing", label: "Support" },
+    { id: "final-challenge", label: "Final Challenge" },
   ],
-  overview: {
-    title: "Welcome to Champion",
+  welcome: {
+    heading: "Welcome",
+    copy: "You already know how Payflex works and how to explain the payment options to a customer. Now let’s look at what happens behind the Point of Sale, where the order of each step matters.",
+  },
+  journey: {
+    heading: "The oneX journey",
     paragraphs: [
-      "Welcome to Champion at TFG: The Brand Worth Talking About. Champion is an iconic sportswear brand with a strong history, a bold style, and everyday comfort that Customers can enjoy in store.",
-      "This course gives you a simple first look at Champion. You will learn what the brand stands for, why it is exciting for TFG, and how to use short, helpful messages when Customers ask about Champion.",
-      "The Champion learning series will cover the brand first, then move into product and range learning for each retail brand. This helps you build your Champion knowledge step by step.",
+      "A customer is ready to pay with Payflex. Use the oneX navigation guide to follow the journey from selecting the tender to completing the sale.",
+      "As you go, look out for three things: the tender order, the customer approval and the final system confirmation.",
     ],
-    journey: ["Meet Champion", "Learn the products in your store"],
+    guideUnavailable: "The oneX navigation guide has not been supplied with the course source files.",
   },
-  meet: {
-    title: "Meet Champion",
-    statement: "Champion is The Original Sportswear Brand™.",
-    history: "The brand started in 1919 and has grown into a well-known sports and lifestyle brand.",
-    lead: "Champion is known for:",
-    points: [
-      "sport-inspired style",
-      "comfortable everyday wear",
-      "a real brand story and heritage",
-      "relaxed lifestyle pieces",
+  rules: {
+    intro: "Before we get into the different situations, here are five rules to keep in mind.",
+    heading: "Five Rules",
+    id: "five-rules-cards",
+    legend: "Select each Payflex rule",
+    cards: [
+      { id: "sales", title: "Payflex is used for sales", copy: "", icon: "/assets/payflex/rule-1.png" },
+      { id: "balance", title: "Payflex covers the full remaining balance", copy: "", icon: "/assets/payflex/rule-2.png" },
+      { id: "order", title: "Other tenders come first and Payflex comes last", copy: "", icon: "/assets/payflex/rule-3.png" },
+      { id: "discount", title: "Employees may use Payflex with their staff discount", copy: "", icon: "/assets/payflex/rule-4.png" },
+      { id: "approval", title: "The customer completes the required approval", copy: "", icon: "/assets/payflex/rule-5.png" },
     ],
   },
-  why: {
-    title: "Why Champion at TFG",
-    text: "Champion gives TFG stores a strong sportswear name that Customers may already know and recognise. It brings together sport, comfort, heritage, and lifestyle style in a way that can support different Customer needs.",
-    videoLabel: "Watch the video",
+  knowledgeChecks: {
+    tender: {
+      id: "kc-tender-order",
+      question: "A customer’s total is R800. The customer wants to use a R300 gift card and Payflex for the rest. What should happen next?",
+      correctId: "b",
+      options: [
+        { id: "a", label: "A. Select Payflex for R800, then add the gift card" },
+        { id: "b", label: "B. Apply the gift card first, then select Payflex for the remaining R500" },
+        { id: "c", label: "C. Apply R300 to Payflex and leave R500 owing" },
+        { id: "d", label: "D. Let the customer choose the tender order" },
+      ],
+      correctFeedback: "All other tenders must be applied first. Payflex comes last and covers the full remaining balance.",
+      incorrectFeedback: "Other tenders must be applied first. Payflex comes last and covers the full remaining balance.",
+    },
+    exclusions: {
+      id: "kc-excluded-products",
+      question: "A customer has a hoodie, airtime and a TFG gift card in the basket. The customer wants to use Payflex. What is the best response?",
+      correctId: "c",
+      options: [
+        { id: "a", label: "A. Process the full basket on Payflex" },
+        { id: "b", label: "B. Refuse the full sale" },
+        { id: "c", label: "C. Explain that airtime and the gift card need another tender, then use Payflex for the eligible merchandise" },
+        { id: "d", label: "D. Remove the excluded items without telling the customer" },
+      ],
+      correctFeedback: "Airtime and TFG gift cards are excluded. Explain this before payment and use Payflex only for the eligible merchandise.",
+      incorrectFeedback: "Airtime and TFG gift cards need another tender. Explain this before payment, then use Payflex for eligible merchandise.",
+    },
+    refund: {
+      id: "kc-refund",
+      question: "A customer returns an item bought with Payflex and asks for cash. What should you say?",
+      correctId: "c",
+      options: [
+        { id: "a", label: "A. “That is fine. I will process the cash refund.”" },
+        { id: "b", label: "B. “The refund will go back to Payflex.”" },
+        { id: "c", label: "C. “Cash and Payflex refunds are not available. Let’s use an approved refund method.”" },
+        { id: "d", label: "D. “Items bought with Payflex cannot be returned.”" },
+      ],
+      correctFeedback: "Cash and Payflex refunds are not available. Use an approved refund method instead.",
+      incorrectFeedback: "The item may be returned, but not in cash or back to Payflex. Use an approved refund method instead.",
+    },
+    support: {
+      id: "kc-support",
+      question: "You have signed out, cleared the cache and logged back in, but Payflex is still missing. What should you do next?",
+      correctId: "c",
+      options: [
+        { id: "a", label: "A. Keep repeating the transaction" },
+        { id: "b", label: "B. Add Payflex manually" },
+        { id: "c", label: "C. Log a call with Synergy or contact Store Tech Support" },
+        { id: "d", label: "D. Ask the customer to change cards" },
+      ],
+      correctFeedback: "Log a call with Synergy or contact Store Tech Support on 021 937 4499.",
+      incorrectFeedback: "If Payflex is still missing, log a call with Synergy or contact Store Tech Support on 021 937 4499.",
+    },
   },
-  heritage: {
-    title: "Champion Heritage",
-    intro: "Champion’s heritage can help you explain why the brand has credibility. Keep this simple by focusing on a short heritage timeline that you can remember and use in Customer conversations.",
-    timelineLabel: "Short heritage timeline:",
-    milestones: [
-      {
-        id: "1919",
-        year: "1919",
-        title: "Champion begins",
-        detail: "Champion was founded as Knickerbocker Knitting Mills in Rochester, New York.",
-        customerMeaning: "This helps Customers see Champion as an established sportswear brand with a long history.",
-        image: "/assets/champion/champion-heritage-1919.png",
-        imageAlt: "Archive photograph of an early Champion athlete holding a ball.",
-      },
-      {
-        id: "1926",
-        year: "1926",
-        title: "Champion supports collegiate teams",
-        detail: "Champion began supplying school uniforms to Wentworth Military Academy, which helped build its link to school and college sport.",
-        customerMeaning: "This shows Customers that Champion has strong roots in sport and team culture.",
-        image: "/assets/champion/champion-heritage-1926.png",
-        imageAlt: "Archive image of a collegiate team sweater.",
-      },
-      {
-        id: "1938",
-        year: "1938",
-        title: "Reverse Weave is introduced",
-        detail: "Champion’s Reverse Weave sweatshirt was created to reduce shrinkage and support movement during sport.",
-        customerMeaning: "This helps Customers understand that Champion is known for practical, comfortable sportswear innovation.",
-        image: "/assets/champion/champion-heritage-1938.png",
-        imageAlt: "Archive Reverse Weave patent illustration.",
-      },
-      {
-        id: "recognition",
-        title: "Sport and lifestyle recognition",
-        detail: "Champion grew from sportswear into a brand recognised across sport, fashion, culture, and everyday style.",
-        customerMeaning: "This shows Customers that Champion works beyond sport and can fit daily outfits and relaxed lifestyle looks.",
-        image: "/assets/champion/champion-lifestyle-archive.png",
-        imageAlt: "Three people wearing colourful Champion sport-inspired lifestyle outfits.",
-      },
-    ] satisfies HeritageMilestone[],
+  exclusions: {
+    heading: "Exclusions",
+    copy: "Not everything in the basket can be paid for with Payflex. TFG gift cards, airtime, data, 1Voucher and other Value-Added Services are excluded. If the basket contains one of these items, tell the customer before you take payment.",
+    sort: {
+      id: "allowed-excluded-sort",
+      legend: "Sort each product into Allowed or Excluded",
+      products: [
+        { id: "merchandise", label: "Ordinary merchandise", category: "allowed" },
+        { id: "gift-card", label: "TFG gift cards", category: "excluded" },
+        { id: "airtime", label: "Airtime", category: "excluded" },
+        { id: "data", label: "Data", category: "excluded" },
+        { id: "voucher", label: "1Voucher", category: "excluded" },
+        { id: "vas", label: "Other Value-Added Services", category: "excluded" },
+      ],
+      completeFeedback: "Activity complete. Payflex may be used for eligible merchandise; excluded products need another tender.",
+    },
   },
-  brandDna: {
-    title: "Champion Brand DNA and Customer Needs",
-    intro: "Let’s look at the Champion values that are easiest to use when speaking to Customers. You do not need to explain every brand value. Focus on the values that are simple, useful, and easy to connect to a Customer’s need.",
-    activityTitle: "Champion Values and Customer Messages",
-    values: [
-      { id: "heritage", label: "Heritage", message: "Champion has a long sportswear history that gives the brand credibility." },
-      { id: "authenticity", label: "Authenticity", message: "Champion has a real brand story linked to sport and lifestyle." },
-      { id: "comfort", label: "Comfort", message: "Champion can suit Customers who want easy, everyday wear." },
-      { id: "sport", label: "Sport", message: "Champion has strong sport roots and a sport-inspired look." },
-      { id: "everyday-style", label: "Everyday style", message: "Champion can fit relaxed outfits and daily lifestyle looks." },
-    ] satisfies BrandValue[],
+  returns: {
+    heading: "Returns",
+    copy: "A customer can return an item bought with Payflex, but the refund cannot go back to Payflex. Cash refunds are also not allowed. Use an approved refund method instead.",
+    journey: {
+      id: "returns-journey",
+      title: "Follow the return journey",
+      steps: [
+        { title: "Return the item", copy: "Follow the returns process for the item." },
+        { title: "Do not refund to Payflex", copy: "The refund cannot go back to Payflex." },
+        { title: "Do not refund in cash", copy: "Cash refunds are not allowed." },
+        { title: "Use an approved method", copy: "Use an approved refund method instead." },
+      ],
+    },
   },
-  knowledge: {
-    title: "Using Champion Knowledge Every Day",
-    intro: "You can use Champion knowledge during normal daily activities. The aim is not to give a long brand history. The aim is to share a short, helpful message that connects Champion to what the Customer needs.",
-    examplesLabel: "Practical Customer conversation examples:",
-    examples: [
-      {
-        number: 1,
-        customer: "I want something comfortable that I can wear every day.",
-        response: "Champion is a good option because it is known for comfort and everyday style. It gives you a relaxed look with a strong sportswear story.",
-      },
-      {
-        number: 2,
-        customer: "I like brands that have a bit of history.",
-        response: "Champion has been around since 1919, so it has a real sportswear heritage. It is known as The Original Sportswear Brand™.",
-      },
-      {
-        number: 3,
-        customer: "I want a sport-inspired outfit, but not something too technical.",
-        response: "Champion works well for that. It has sport roots, but the look is relaxed enough for everyday wear.",
-      },
-      {
-        number: 4,
-        customer: "I have seen Champion before, but I do not know much about it.",
-        response: "Champion is The Original Sportswear Brand™. It brings together sport-inspired style, comfort, and a long brand story.",
-      },
-      {
-        number: 5,
-        customer: "I want something casual that still feels like a known brand.",
-        response: "Champion is a recognised sportswear brand with relaxed lifestyle pieces. It is a good choice if you want everyday comfort with a brand story behind it.",
-      },
-    ] satisfies ConversationExample[],
-  },
-  closing: {
-    title: "Closing",
+  missing: {
+    heading: "When Payflex is missing",
     paragraphs: [
-      "Well done. You have completed Champion at TFG: The Brand Worth Talking About.",
-      "You can now identify Champion as The Original Sportswear Brand™, recall key heritage points, recognise simple Champion values, match Customer needs to Champion messages, and choose a useful talking point during a Customer conversation.",
-      "Champion is more than a logo. It is a sportswear brand with heritage, comfort, style, and cultural relevance that store employees can bring to life with Customers every day.",
+      "Sometimes Payflex may not appear in the tender list. Start by signing out of oneX, clearing the cache in Settings, and logging back in.",
+      "If Payflex is still missing, log a call with Synergy or contact Store Tech Support on 021 937 4499.",
+    ],
+    reveal: {
+      id: "payflex-missing-steps",
+      title: "Steps to take",
+      before: ["1. Sign out of oneX"],
+      missing: "2. Clear the cache in Settings",
+      after: ["3. Log back in", "4. If Payflex is still missing, log a call with Synergy or contact Store Tech Support"],
+      prompt: "Reveal step 2",
+    },
+  },
+  finalChallenge: {
+    id: "final-challenge-activity",
+    heading: "Final challenge",
+    scenario: "You are behind the Point of Sale. A customer has clothing and airtime, pays part with a gift card and wants Payflex for the balance.",
+    instruction: "Make the right decisions: identify the excluded item, apply the tenders in the correct order, use Payflex for the eligible remaining balance, and choose the correct support action if Payflex is missing.",
+    parts: [
+      {
+        title: "Decision 1: Identify the excluded item",
+        prompt: "Which basket item is excluded from Payflex?",
+        choices: [
+          { id: "airtime", label: "Airtime", feedback: "Correct. Airtime is excluded and needs another tender.", correct: true },
+          { id: "clothing", label: "Clothing", feedback: "Clothing is the eligible merchandise in this scenario.", correct: false },
+          { id: "both", label: "Both clothing and airtime", feedback: "Only the airtime is excluded in this scenario.", correct: false },
+          { id: "neither", label: "Neither item", feedback: "Airtime is excluded from Payflex.", correct: false },
+        ],
+      },
+      {
+        title: "Decision 2: Apply the tenders",
+        prompt: "Which tender should be applied first?",
+        choices: [
+          { id: "gift-first", label: "Apply the gift card first", feedback: "Correct. Other tenders come first and Payflex comes last.", correct: true },
+          { id: "payflex-first", label: "Select Payflex first", feedback: "Payflex must be selected last.", correct: false },
+          { id: "customer-order", label: "Let the customer choose the order", feedback: "The tender order is fixed: other tenders first, Payflex last.", correct: false },
+          { id: "airtime-payflex", label: "Put the airtime on Payflex first", feedback: "Airtime is excluded from Payflex.", correct: false },
+        ],
+      },
+      {
+        title: "Decision 3: Use Payflex correctly",
+        prompt: "What should Payflex cover?",
+        choices: [
+          { id: "eligible-balance", label: "The full eligible remaining balance", feedback: "Correct. Payflex covers the full eligible remaining balance.", correct: true },
+          { id: "airtime", label: "The airtime", feedback: "Airtime is excluded and needs another tender.", correct: false },
+          { id: "part-balance", label: "Only part of the eligible balance", feedback: "Payflex covers the full remaining eligible balance.", correct: false },
+          { id: "full-basket", label: "The full basket including airtime", feedback: "Excluded products cannot be paid for with Payflex.", correct: false },
+        ],
+      },
+      {
+        title: "Decision 4: Get support",
+        prompt: "Payflex is still missing after sign-out, cache clear and login. What should you do?",
+        choices: [
+          { id: "support", label: "Log a call with Synergy or contact Store Tech Support", feedback: "Correct. Store Tech Support: 021 937 4499.", correct: true },
+          { id: "repeat", label: "Keep repeating the transaction", feedback: "Escalate after the troubleshooting steps do not restore Payflex.", correct: false },
+          { id: "manual", label: "Add Payflex manually", feedback: "Do not add Payflex manually.", correct: false },
+          { id: "change-card", label: "Ask the customer to change cards", feedback: "Use the taught support route instead.", correct: false },
+        ],
+      },
     ],
   },
-  footer: { button: "Return to People Connect", url: "#top" },
+  completion: {
+    heading: "Well done. You can now apply the Payflex rules on oneX.",
+    reminder: "Remember: other tenders first, Payflex last. Check the basket for excluded products. Refunds do not go back to Payflex and are not paid in cash.",
+    resources: "Keep the oneX navigation guide and Payflex FAQ close by when you need a quick reminder.",
+    returnLabel: "Return to People Connect",
+  },
 };

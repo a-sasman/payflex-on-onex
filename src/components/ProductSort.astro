@@ -1,0 +1,51 @@
+---
+interface Product { id: string; label: string; category: "allowed" | "excluded"; }
+interface Props { id: string; legend: string; products: Product[]; completeFeedback: string; }
+const { id, legend, products, completeFeedback } = Astro.props as Props;
+---
+
+<product-sort data-interaction-id={id} class="interaction-block">
+  <fieldset><legend>{legend}</legend>
+    <div class="sort-list">
+      {products.map((product) => (
+        <article class="sort-card" data-product={product.id} data-answer={product.category}>
+          <h3>{product.label}</h3>
+          <div class="sort-actions" role="group" aria-label={`Classify ${product.label}`}>
+            <button type="button" data-choice="allowed" aria-pressed="false">Allowed</button>
+            <button type="button" data-choice="excluded" aria-pressed="false">Excluded</button>
+          </div>
+        </article>
+      ))}
+    </div>
+  </fieldset>
+  <p class="interaction-status" aria-live="polite" data-complete-feedback={completeFeedback}></p>
+</product-sort>
+
+<script>
+  import { readInteraction, whenCourseStateReady, writeInteraction } from "../scripts/interaction-state";
+  if (!customElements.get("product-sort")) customElements.define("product-sort", class extends HTMLElement {
+    connectedCallback() {
+      const id = this.dataset.interactionId || "product-sort"; const cards = [...this.querySelectorAll<HTMLElement>(".sort-card")];
+      const status = this.querySelector<HTMLElement>(".interaction-status"); let state: { choices: Record<string, string>; complete: boolean } = { choices: {}, complete: false };
+      const render = () => cards.forEach((card) => {
+        const choice = state.choices[card.dataset.product || ""];
+        card.classList.toggle("is-correct", Boolean(choice) && choice === card.dataset.answer);
+        card.classList.toggle("is-incorrect", Boolean(choice) && choice !== card.dataset.answer);
+        card.querySelectorAll<HTMLButtonElement>("button[data-choice]").forEach((button) => button.setAttribute("aria-pressed", String(choice === button.dataset.choice)));
+      });
+      const updateStatus = () => {
+        if (!status) return;
+        const count = Object.keys(state.choices).length;
+        status.textContent = state.complete ? status.dataset.completeFeedback || "Activity complete." : count === cards.length ? "Some products are in the wrong group. Review your choices." : `${count} of ${cards.length} products classified.`;
+      };
+      const restore = () => { const saved = readInteraction<{ choices?: Record<string, string>; complete?: boolean }>(id); state = { choices: saved?.choices || {}, complete: saved?.complete === true }; render(); updateStatus(); };
+      cards.forEach((card) => card.addEventListener("click", (event) => {
+        const button = (event.target as Element).closest<HTMLButtonElement>("button[data-choice]"); if (!button) return;
+        state.choices = { ...state.choices, [card.dataset.product || ""]: button.dataset.choice || "" };
+        state.complete = cards.every((item) => state.choices[item.dataset.product || ""] === item.dataset.answer);
+        render(); updateStatus(); writeInteraction(id, state);
+      }));
+      restore(); whenCourseStateReady(restore);
+    }
+  });
+</script>

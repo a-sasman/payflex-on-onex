@@ -1,0 +1,54 @@
+---
+interface Option { id: string; label: string; }
+interface Props { id: string; question: string; options: Option[]; correctId: string; correctFeedback: string; incorrectFeedback: string; }
+const { id, question, options, correctId, correctFeedback } = Astro.props as Props;
+const headingId = `${id}-heading`;
+---
+
+<knowledge-check data-interaction-id={id} data-correct-id={correctId} class="interaction-block">
+  <h2 id={headingId}>Knowledge Check</h2>
+  <form aria-labelledby={headingId}>
+    <fieldset><legend class="sr-only">{question}</legend>
+      <div class="knowledge-grid">
+        <p class="question-copy">{question}</p>
+        <div class="option-list">
+          {options.map((option) => <label><input type="radio" name={id} value={option.id} /> <span>{option.label}</span></label>)}
+        </div>
+      </div>
+    </fieldset>
+    <p class="knowledge-feedback" hidden data-correct-feedback={correctFeedback}></p>
+    <p class="sr-only knowledge-status" aria-live="polite"></p>
+  </form>
+</knowledge-check>
+
+<script>
+  import { writeInteraction } from "../scripts/interaction-state";
+  if (!customElements.get("knowledge-check")) customElements.define("knowledge-check", class extends HTMLElement {
+    connectedCallback() {
+      const id = this.dataset.interactionId || "knowledge-check";
+      const form = this.querySelector<HTMLFormElement>("form")!;
+      const status = this.querySelector<HTMLElement>(".knowledge-status")!;
+      const feedback = this.querySelector<HTMLElement>(".knowledge-feedback")!;
+      const inputs = [...this.querySelectorAll<HTMLInputElement>("input")];
+      const showResult = (selected: string) => {
+        const correctId = this.dataset.correctId || "";
+        const selectedInput = inputs.find((input) => input.value === selected);
+        this.querySelectorAll(".option-list label").forEach((label) => label.classList.remove("is-correct", "is-incorrect"));
+        selectedInput?.closest("label")?.classList.add(selected === correctId ? "is-correct" : "is-incorrect");
+        const correct = selected === correctId;
+        inputs.forEach((input) => input.disabled = correct);
+        if (correct) this.dataset.locked = "true";
+        feedback.hidden = !correct;
+        feedback.textContent = correct ? `Correct: ${feedback.dataset.correctFeedback || ""}` : "";
+        status.textContent = correct ? feedback.textContent : "Incorrect.";
+      };
+      form.addEventListener("change", () => {
+        if (this.dataset.locked === "true") return;
+        const selected = new FormData(form).get(id)?.toString(); if (!selected) return;
+        const correct = selected === this.dataset.correctId;
+        showResult(selected);
+        writeInteraction(id, { selected, submitted: true, correct });
+      });
+    }
+  });
+</script>

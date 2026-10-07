@@ -1,0 +1,27 @@
+---
+interface Props { id: string; title: string; src?: string; alt: string; }
+const { id, title, src, alt } = Astro.props as Props;
+---
+
+<guide-zoom data-interaction-id={id} class="interaction-block">
+  <div class="guide-toolbar" role="group" aria-label={`${title} zoom controls`}>
+    <strong>{title}</strong><button type="button" data-zoom="out" aria-label="Zoom out">−</button><button type="button" data-zoom="reset">Reset</button><button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+  </div>
+  <div class="guide-viewport" tabindex="0" aria-label={`${title}. Use the zoom controls to enlarge the guide.`}>
+    {src ? <img src={src} alt={alt} /> : <div class="guide-placeholder" role="img" aria-label={alt}>[GUIDE ASSET]</div>}
+  </div>
+  <p class="interaction-status" aria-live="polite">Zoom 100%.</p>
+</guide-zoom>
+
+<script>
+  import { readInteraction, whenCourseStateReady, writeInteraction } from "../scripts/interaction-state";
+  if (!customElements.get("guide-zoom")) customElements.define("guide-zoom", class extends HTMLElement {
+    connectedCallback() {
+      const id = this.dataset.interactionId || "guide-zoom"; const content = this.querySelector<HTMLElement>(".guide-viewport > *")!; const status = this.querySelector<HTMLElement>(".interaction-status")!; let zoom = 1;
+      const render = () => { content.style.width = `${zoom * 100}%`; content.style.maxWidth = "none"; status.textContent = `Zoom ${Math.round(zoom * 100)}%.`; };
+      const restore = () => { zoom = readInteraction<{ zoom?: number }>(id)?.zoom || 1; render(); };
+      this.querySelector(".guide-toolbar")?.addEventListener("click", (event) => { const action = (event.target as Element).closest<HTMLButtonElement>("[data-zoom]")?.dataset.zoom; if (!action) return; zoom = action === "reset" ? 1 : Math.min(2.5, Math.max(1, zoom + (action === "in" ? .25 : -.25))); render(); writeInteraction(id, { zoom }); });
+      restore(); whenCourseStateReady(restore);
+    }
+  });
+</script>

@@ -1,5 +1,5 @@
 {
-  "name": "champion-at-tfg-course",
+  "name": "payflex-on-onex",
   "type": "module",
   "version": "0.0.1",
   "engines": {
@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "prepare:scorm": "node scripts/prepare-scorm.mjs",
+    "verify:scorm": "node scripts/verify-scorm.mjs",
     "preview": "astro preview",
     "verify": "node scripts/verify-course.mjs",
     "astro": "astro"

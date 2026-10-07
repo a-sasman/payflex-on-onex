@@ -1,0 +1,39 @@
+---
+interface DialogueLine {
+  label: string;
+  text: string;
+}
+
+interface Props {
+  speakerOneLabel: string;
+  speakerOneText: string;
+  speakerTwoLabel: string;
+  speakerTwoLines: DialogueLine[];
+}
+
+const { speakerOneLabel, speakerOneText, speakerTwoLabel, speakerTwoLines } = Astro.props as Props;
+---
+
+<div class="dialogue" aria-label="Example dialogue">
+  <div class="dialogue-bubble dialogue-bubble--one">
+    <svg class="dialogue-avatar" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <circle cx="32" cy="22" r="12" /><path d="M11 58c2-15 10-22 21-22s19 7 21 22" />
+    </svg>
+    <div><strong>{speakerOneLabel}:</strong><p>{speakerOneText}</p></div>
+  </div>
+  <div class="dialogue-bubble dialogue-bubble--two">
+    <svg class="dialogue-avatar" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <circle cx="32" cy="22" r="12" /><path d="M11 58c2-15 10-22 21-22s19 7 21 22" />
+    </svg>
+    <div>
+      <strong>{speakerTwoLabel}:</strong>
+      {speakerTwoLines.slice(0, 1).map((line) => <p>{line.label && <b>{line.label} </b>}{line.text}</p>)}
+    </div>
+  </div>
+  <div class="dialogue-response">
+    <svg class="dialogue-response-icon" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <path d="M23 45h18M25 51h14M28 57h8M20 27a12 12 0 1 1 24 0c0 7-5 9-7 14H27c-2-5-7-7-7-14ZM32 4V0M10 12 5 7M54 12l5-5M8 29H1M63 29h-7" />
+    </svg>
+    <div>{speakerTwoLines.slice(1).map((line) => <p>{line.label && <b>{line.label} </b>}{line.text}</p>)}</div>
+  </div>
+</div>

@@ -1,0 +1,49 @@
+---
+interface Choice { id: string; label: string; feedback: string; correct: boolean; nextPart?: number | "complete"; }
+interface Part { title: string; prompt: string; choices: Choice[]; }
+interface Props { id: string; heading: string; parts: Part[]; }
+const { id, heading, parts } = Astro.props as Props;
+---
+
+<branching-challenge data-interaction-id={id} class="interaction-block">
+  <h3>{heading}</h3>
+  {parts.map((part, index) => (
+    <section class="challenge-part" data-part={index} hidden={index > 0}>
+      <p class="challenge-progress">Part {index + 1} of {parts.length}</p><h4>{part.title}</h4><p>{part.prompt}</p>
+      <div class="challenge-choices">
+        {part.choices.map((choice) => <button type="button" data-choice={choice.id} data-feedback={choice.feedback} data-correct={String(choice.correct)} data-next-part={choice.nextPart} aria-pressed="false">{choice.label}</button>)}
+      </div>
+      <p class="interaction-feedback" aria-live="polite"></p>
+      <button class="interaction-button challenge-next" type="button" disabled>{index === parts.length - 1 ? "Finish challenge" : "Continue"}</button>
+    </section>
+  ))}
+</branching-challenge>
+
+<script>
+  import { readInteraction, whenCourseStateReady, writeInteraction } from "../scripts/interaction-state";
+  type ChallengeState = { current?: number; answers?: Record<string, string>; complete?: boolean };
+  if (!customElements.get("branching-challenge")) customElements.define("branching-challenge", class extends HTMLElement {
+    connectedCallback() {
+      const id = this.dataset.interactionId || "final-challenge"; const parts = [...this.querySelectorAll<HTMLElement>(".challenge-part")];
+      let state: ChallengeState = { current: 0, answers: {} };
+      const render = () => {
+        this.hidden = state.complete === true;
+        const current = Math.min(state.current || 0, parts.length - 1); parts.forEach((part, index) => part.hidden = state.complete === true || index !== current);
+        parts.forEach((part, index) => { const selected = state.answers?.[String(index)]; part.querySelectorAll<HTMLButtonElement>("[data-choice]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.choice === selected))); const selectedButton = selected ? part.querySelector<HTMLButtonElement>(`[data-choice="${CSS.escape(selected)}"]`) : null; const feedback = part.querySelector<HTMLElement>(".interaction-feedback")!; feedback.textContent = selectedButton?.dataset.feedback || ""; feedback.classList.toggle("is-correct", selectedButton?.dataset.correct === "true"); feedback.classList.toggle("is-incorrect", Boolean(selectedButton) && selectedButton?.dataset.correct !== "true"); part.querySelector<HTMLButtonElement>(".challenge-next")!.disabled = selectedButton?.dataset.correct !== "true"; });
+      };
+      const restore = () => { state = readInteraction<ChallengeState>(id) || { current: 0, answers: {} }; render(); };
+      parts.forEach((part, index) => {
+        part.querySelector(".challenge-choices")?.addEventListener("click", (event) => { const button = (event.target as Element).closest<HTMLButtonElement>("[data-choice]"); if (!button) return; state.answers = { ...state.answers, [String(index)]: button.dataset.choice || "" }; render(); writeInteraction(id, state); });
+        part.querySelector(".challenge-next")?.addEventListener("click", () => {
+          const selected = state.answers?.[String(index)];
+          const selectedButton = selected ? part.querySelector<HTMLButtonElement>(`[data-choice="${CSS.escape(selected)}"]`) : null;
+          const configuredNext = selectedButton?.dataset.nextPart;
+          if (configuredNext === "complete" || (!configuredNext && index === parts.length - 1)) { state.complete = true; render(); }
+          else { const nextIndex = configuredNext ? Number(configuredNext) : index + 1; state.current = Math.min(Math.max(nextIndex, 0), parts.length - 1); render(); parts[state.current]?.scrollIntoView({ block: "nearest" }); }
+          writeInteraction(id, state);
+        });
+      });
+      restore(); whenCourseStateReady(restore);
+    }
+  });
+</script>

@@ -7,6 +7,9 @@
   var sessionStartedAt = 0;
   var lessonStatus = "";
   var totalTime = "";
+  var entry = "";
+  var lessonLocation = "";
+  var lastCommitSucceeded = null;
 
   function findApi(startWindow, includeOpener) {
     var current = startWindow;
@@ -55,11 +58,21 @@
     sessionStartedAt = Date.now();
     lessonStatus = String(call("LMSGetValue", "cmi.core.lesson_status") || "").toLowerCase();
     totalTime = String(call("LMSGetValue", "cmi.core.total_time") || "");
+    entry = String(call("LMSGetValue", "cmi.core.entry") || "").toLowerCase();
+    lessonLocation = String(call("LMSGetValue", "cmi.core.lesson_location") || "");
     if (!lessonStatus || lessonStatus === "not attempted" || lessonStatus === "unknown") {
-      call("LMSSetValue", "cmi.core.lesson_status", "incomplete");
+      if (String(call("LMSSetValue", "cmi.core.lesson_status", "incomplete")).toLowerCase() !== "true") {
+        lastCommitSucceeded = false;
+        return true;
+      }
       lessonStatus = "incomplete";
-      call("LMSCommit", "");
     }
+    if (String(call("LMSSetValue", "cmi.core.exit", lessonStatus === "completed" || lessonStatus === "passed" ? "" : "suspend")).toLowerCase() !== "true") {
+      lastCommitSucceeded = false;
+      return true;
+    }
+    updateSessionTime();
+    lastCommitSucceeded = String(call("LMSCommit", "")).toLowerCase() === "true";
     return true;
   }
 
@@ -72,7 +85,8 @@
   function commit() {
     if (!initialize()) return false;
     updateSessionTime();
-    return String(call("LMSCommit", "")).toLowerCase() === "true";
+    lastCommitSucceeded = String(call("LMSCommit", "")).toLowerCase() === "true";
+    return lastCommitSucceeded;
   }
 
   function getLessonStatus() {
@@ -82,6 +96,16 @@
   }
 
   function getCompletionStatus() { return getLessonStatus(); }
+  function getEntry() {
+    if (!initialize()) return "";
+    entry = String(call("LMSGetValue", "cmi.core.entry") || entry).toLowerCase();
+    return entry;
+  }
+  function getLessonLocation() {
+    if (!initialize()) return "";
+    lessonLocation = String(call("LMSGetValue", "cmi.core.lesson_location") || lessonLocation);
+    return lessonLocation;
+  }
   function getTotalTime() {
     if (!initialize()) return "";
     totalTime = String(call("LMSGetValue", "cmi.core.total_time") || totalTime);
@@ -92,26 +116,59 @@
     return String(call("LMSGetValue", "cmi.suspend_data") || "");
   }
   function setSuspendData(value) {
-    if (!setValue("cmi.suspend_data", String(value).slice(0, 4096))) return false;
+    var serialized = String(value);
+    if (serialized.length > 4096) { lastCommitSucceeded = false; return false; }
+    if (!setValue("cmi.suspend_data", serialized)) { lastCommitSucceeded = false; return false; }
+    return commit();
+  }
+  function saveProgress(value, location) {
+    if (!initialize()) return false;
+    var serialized = String(value);
+    var nextLocation = String(location || "");
+    if (serialized.length > 4096 || !nextLocation) { lastCommitSucceeded = false; return false; }
+    if (!setValue("cmi.suspend_data", serialized)) { lastCommitSucceeded = false; return false; }
+    if (!setValue("cmi.core.lesson_location", nextLocation)) { lastCommitSucceeded = false; return false; }
+    lessonLocation = nextLocation;
+    var currentStatus = getLessonStatus();
+    if (currentStatus !== "completed" && currentStatus !== "passed") {
+      if (!setValue("cmi.core.exit", "suspend")) { lastCommitSucceeded = false; return false; }
+    }
     return commit();
   }
   function setCompleted() {
-    if (!setValue("cmi.core.lesson_status", "completed")) return false;
-    lessonStatus = "completed";
-    setValue("cmi.core.exit", "");
-    return commit();
+    if (!initialize()) return false;
+    var currentStatus = getLessonStatus();
+    if (currentStatus !== "completed") {
+      if (!setValue("cmi.core.lesson_status", "completed")) { lastCommitSucceeded = false; return false; }
+      lessonStatus = "completed";
+    }
+    if (!setValue("cmi.core.exit", "")) { lastCommitSucceeded = false; return false; }
+    lastCommitSucceeded = commit();
+    if (!lastCommitSucceeded && currentStatus !== "completed" && currentStatus !== "passed") {
+      call("LMSSetValue", "cmi.core.lesson_status", currentStatus || "incomplete");
+      call("LMSSetValue", "cmi.core.exit", "suspend");
+      lessonStatus = currentStatus || "incomplete";
+    }
+    return lastCommitSucceeded;
   }
   function finish() {
     if (!initialized || finished) return true;
+    lessonStatus = String(call("LMSGetValue", "cmi.core.lesson_status") || lessonStatus).toLowerCase();
     updateSessionTime();
-    call("LMSSetValue", "cmi.core.exit", lessonStatus === "completed" ? "" : "suspend");
-    call("LMSCommit", "");
+    if (String(call("LMSSetValue", "cmi.core.exit", lessonStatus === "completed" || lessonStatus === "passed" ? "" : "suspend")).toLowerCase() !== "true") {
+      lastCommitSucceeded = false;
+      return false;
+    }
+    lastCommitSucceeded = String(call("LMSCommit", "")).toLowerCase() === "true";
+    if (!lastCommitSucceeded) return false;
     var result = String(call("LMSFinish", "")).toLowerCase() === "true";
-    finished = true;
+    if (result) finished = true;
     return result;
   }
 
-  global.CourseSCORM = { initialize: initialize, getLessonStatus: getLessonStatus, getCompletionStatus: getCompletionStatus, getTotalTime: getTotalTime, getSuspendData: getSuspendData, setSuspendData: setSuspendData, setCompleted: setCompleted, commit: commit, finish: finish };
+  function getLastCommitSucceeded() { return lastCommitSucceeded; }
+
+  global.CourseSCORM = { initialize: initialize, getLessonStatus: getLessonStatus, getCompletionStatus: getCompletionStatus, getEntry: getEntry, getLessonLocation: getLessonLocation, getTotalTime: getTotalTime, getSuspendData: getSuspendData, setSuspendData: setSuspendData, saveProgress: saveProgress, setCompleted: setCompleted, commit: commit, finish: finish, getLastCommitSucceeded: getLastCommitSucceeded };
   initialize();
   global.addEventListener("pagehide", finish);
   global.addEventListener("beforeunload", finish);

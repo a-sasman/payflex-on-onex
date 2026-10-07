@@ -1,0 +1,33 @@
+---
+interface JourneyStep { title: string; copy: string; }
+interface Props { id: string; title: string; steps: JourneyStep[]; }
+const { id, title, steps } = Astro.props as Props;
+---
+
+<returns-journey data-interaction-id={id} class="interaction-block">
+  <h3>{title}</h3>
+  <ol class="journey-steps">
+    {steps.map((step, index) => <li data-step={index} hidden={index > 0}><strong>{step.title}</strong><p>{step.copy}</p></li>)}
+  </ol>
+  <div class="interaction-actions">
+    <button class="interaction-button" type="button" data-action="back" disabled>Previous step</button>
+    <button class="interaction-button" type="button" data-action="next">Next step</button>
+  </div>
+  <p class="interaction-status" aria-live="polite"></p>
+</returns-journey>
+
+<script>
+  import { readInteraction, whenCourseStateReady, writeInteraction } from "../scripts/interaction-state";
+  if (!customElements.get("returns-journey")) customElements.define("returns-journey", class extends HTMLElement {
+    connectedCallback() {
+      const id = this.dataset.interactionId || "returns-journey"; const steps = [...this.querySelectorAll<HTMLElement>("[data-step]")];
+      const previous = this.querySelector<HTMLButtonElement>('[data-action="back"]')!; const next = this.querySelector<HTMLButtonElement>('[data-action="next"]')!;
+      const status = this.querySelector<HTMLElement>(".interaction-status")!; let current = 0;
+      const render = (focus = false) => { steps.forEach((step, index) => step.hidden = index !== current); previous.disabled = current === 0; next.disabled = current === steps.length - 1; status.textContent = `Step ${current + 1} of ${steps.length}.`; if (focus) steps[current]?.focus?.(); };
+      const restore = () => { const saved = readInteraction<{ current?: number }>(id)?.current; current = Number.isInteger(saved) ? Math.min(Math.max(saved || 0, 0), steps.length - 1) : 0; render(); };
+      previous.addEventListener("click", () => { current--; render(); writeInteraction(id, { current }); });
+      next.addEventListener("click", () => { current++; render(); writeInteraction(id, { current }); });
+      restore(); whenCourseStateReady(restore);
+    }
+  });
+</script>

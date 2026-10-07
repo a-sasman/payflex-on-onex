@@ -1,8 +1,10 @@
 ---
-import BrandMatch from "../components/BrandMatch.astro";
-import ChampionLogo from "../components/ChampionLogo.astro";
-import ConversationCard from "../components/ConversationCard.astro";
-import HeritageCard from "../components/HeritageCard.astro";
+import BranchingFinalChallenge from "../components/BranchingFinalChallenge.astro";
+import KnowledgeCheck from "../components/KnowledgeCheck.astro";
+import MissingStepReveal from "../components/MissingStepReveal.astro";
+import ProductSort from "../components/ProductSort.astro";
+import ReturnsJourney from "../components/ReturnsJourney.astro";
+import SelectableRuleCards from "../components/SelectableRuleCards.astro";
 import { courseData } from "../data/course";
 import CourseLayout from "../layouts/CourseLayout.astro";
 ---
@@ -11,131 +13,106 @@ import CourseLayout from "../layouts/CourseLayout.astro";
   <div class="course-page">
     <header class="site-header" id="top">
       <nav class="course-nav container" aria-label="Course sections">
-        <a class="brand-link" href="#overview" aria-label="Champion course overview">
-          <ChampionLogo light />
+        <a class="brand-link" href="#welcome" aria-label="Payflex on oneX welcome">
+          <img src="/assets/payflex/payflex-logo.png" alt="Payflex" width="2155" height="476" />
         </a>
         <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="course-links">
-          <span class="sr-only">Toggle course navigation</span>
-          <span></span><span></span><span></span>
+          <span class="sr-only">Toggle course navigation</span><span></span><span></span><span></span>
         </button>
         <div class="course-links" id="course-links">
-          {courseData.nav.map((item, index) => (
-            <a href={`#${item.id}`} class:list={[index === 0 && "active"]}>{item.label}</a>
-          ))}
+          {courseData.nav.map((item, index) => <a href={`#${item.id}`} class:list={[index === 0 && "active"]}>{item.label}</a>)}
         </div>
       </nav>
     </header>
 
     <main id="main-content">
-      <section class="hero-section container" id="overview" data-nav-section>
-        <div class="hero-copy">
-          <h1>{courseData.overview.title}</h1>
-          {courseData.overview.paragraphs.map((paragraph, index) => (
-            <p>{index === 0 ? <Fragment set:html={paragraph.replace("The Brand Worth Talking About.", "<strong>The Brand Worth Talking About.</strong>")} /> : paragraph}</p>
-          ))}
-          <div class="learning-journey" aria-label="Champion learning journey">
-            {courseData.overview.journey.map((step, index) => (
-              <div class="journey-step">
-                <span>Step {index + 1}</span>
-                <strong>{step}</strong>
+      <div class="welcome-rules-stage">
+        <div class="welcome-stage">
+          <section class="welcome-section container" id="welcome" data-nav-section data-progress-section>
+            <div class="welcome-panel">
+              <div class="welcome-copy">
+                <h1>{courseData.welcome.heading}</h1>
+                <p>{courseData.welcome.copy}</p>
               </div>
-            ))}
+              <section class="journey-copy" id="onex-journey" data-progress-section>
+                <h2>{courseData.journey.heading}</h2>
+                {courseData.journey.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+              </section>
+            </div>
+          </section>
+        </div>
+
+        <section class="rules-section container" id="five-rules" data-nav-section data-progress-section>
+          <p class="section-lead">{courseData.rules.intro}</p>
+          <h2>{courseData.rules.heading}</h2>
+          <SelectableRuleCards {...courseData.rules} />
+        </section>
+      </div>
+
+      <section class="assessment-wrap container" id="kc-tender" data-progress-section>
+        <KnowledgeCheck {...courseData.knowledgeChecks.tender} />
+      </section>
+
+      <section class="exclusions-section" id="exclusions" data-nav-section data-progress-section>
+        <div class="decorative-pattern decorative-pattern--left" aria-hidden="true"></div>
+        <div class="decorative-pattern decorative-pattern--right" aria-hidden="true"></div>
+        <div class="container">
+          <div class="policy-pill">
+            <h2>{courseData.exclusions.heading}</h2>
+            <p>{courseData.exclusions.copy}</p>
           </div>
-        </div>
-        <div class="hero-visual" aria-label="Champion sportswear models">
-          <img class="hero-model hero-model--woman" src="/assets/champion/champion-hero-woman.png" alt="Woman wearing a grey Champion hoodie and joggers." />
-          <img class="hero-model hero-model--man" src="/assets/champion/champion-hero-man.png" alt="Man wearing a black Champion T-shirt." />
+          <ProductSort {...courseData.exclusions.sort} />
         </div>
       </section>
 
-      <section class="course-panel meet-section container" id="meet-champion" data-nav-section>
-        <div class="meet-copy">
-          <h2>{courseData.meet.title}</h2>
-          <p>{courseData.meet.statement}</p>
-          <p>{courseData.meet.history}</p>
-          <h3>{courseData.meet.lead}</h3>
-          <ul>
-            {courseData.meet.points.map((point) => <li>{point}</li>)}
-          </ul>
-        </div>
-        <img class="meet-editorial" src="/assets/champion/champion-its-in-the-name.png" alt="Champion archive campaign reading ‘It’s in the name’ beside people wearing Reverse Weave hoodies." />
+      <section class="assessment-wrap container" id="kc-exclusions" data-progress-section>
+        <KnowledgeCheck {...courseData.knowledgeChecks.exclusions} />
       </section>
 
-      <section class="course-panel why-section container" id="why-champion" data-nav-section>
-        <div class="section-heading">
-          <h2>{courseData.why.title}</h2>
-          <p>{courseData.why.text}</p>
+      <section class="returns-section container" id="returns" data-nav-section data-progress-section>
+        <div class="policy-pill">
+          <h2>{courseData.returns.heading}</h2>
+          <p>{courseData.returns.copy}</p>
         </div>
-        <h3>{courseData.why.videoLabel}</h3>
-        <div class="video-placeholder">
-          <video
-            controls
-            preload="none"
-            poster="/assets/champion/champion-video-placeholder.png"
-            aria-label="Champion has arrived at TFG video"
-          >
-            <source src="/assets/champion/champion-has-arrived-at-tfg.mp4" type="video/mp4" />
-            Your browser does not support embedded video.
-          </video>
-        </div>
+        <ReturnsJourney {...courseData.returns.journey} />
       </section>
 
-      <section class="heritage-section" id="champion-heritage" data-nav-section>
-        <div class="container heritage-inner">
-          <div class="section-heading section-heading--light">
-            <p class="section-kicker">Since 1919</p>
-            <h2>{courseData.heritage.title}</h2>
-            <p>{courseData.heritage.intro}</p>
-            <h3>{courseData.heritage.timelineLabel}</h3>
-          </div>
-          <div class="heritage-grid">
-            {courseData.heritage.milestones.map((milestone) => <HeritageCard milestone={milestone} />)}
-          </div>
-          <div class="heritage-download">
-            <p>
-              Download the <a href="/assets/champion/legacy-of-champions.pdf" download="Legacy-of-Champions.pdf">PDF</a> to learn more.
-            </p>
-          </div>
-        </div>
-      </section>
+      <div class="refund-stage">
+        <section class="assessment-wrap container" id="kc-refund" data-progress-section>
+          <KnowledgeCheck {...courseData.knowledgeChecks.refund} />
+        </section>
+      </div>
 
-      <section class="course-panel dna-section container" id="brand-dna" data-nav-section>
-        <div class="section-heading">
-          <h2>{courseData.brandDna.title}</h2>
-          <p>{courseData.brandDna.intro}</p>
-        </div>
-        <h3 class="activity-title">{courseData.brandDna.activityTitle}</h3>
-        <BrandMatch values={courseData.brandDna.values} />
-      </section>
+      <div class="dark-stage">
+        <section class="missing-section container" id="payflex-missing" data-nav-section data-progress-section>
+          <h2>{courseData.missing.heading}</h2>
+          {courseData.missing.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+          <MissingStepReveal {...courseData.missing.reveal} />
+        </section>
 
-      <section class="course-panel knowledge-section container" id="champion-knowledge" data-nav-section>
-        <div class="section-heading">
-          <h2>{courseData.knowledge.title}</h2>
-          <p>{courseData.knowledge.intro}</p>
-          <h3>{courseData.knowledge.examplesLabel}</h3>
-        </div>
-        <div class="conversation-grid">
-          {courseData.knowledge.examples.map((example) => <ConversationCard example={example} />)}
-        </div>
-      </section>
+        <section class="assessment-wrap assessment-wrap--dark container" id="kc-support" data-progress-section>
+          <KnowledgeCheck {...courseData.knowledgeChecks.support} />
+        </section>
 
-      <section class="closing-section container" id="closing">
-        <div class="closing-brand">
-          <ChampionLogo />
-        </div>
-        <div class="closing-copy">
-          <h2>{courseData.closing.title}</h2>
-          {courseData.closing.paragraphs.map((paragraph, index) => (
-            <p>{index === 0 ? <Fragment set:html={paragraph.replace("Champion at TFG: The Brand Worth Talking About.", "<strong>Champion at TFG: The Brand Worth Talking About.</strong>")} /> : paragraph}</p>
-          ))}
-        </div>
-      </section>
+        <section class="final-section container" id="final-challenge" data-nav-section data-progress-section>
+          <h2>{courseData.finalChallenge.heading}</h2>
+          <p class="final-scenario">{courseData.finalChallenge.scenario}</p>
+          <p class="final-instruction"><strong>Make the right decisions:</strong> {courseData.finalChallenge.instruction.replace("Make the right decisions: ", "")}</p>
+          <BranchingFinalChallenge {...courseData.finalChallenge} />
+        </section>
+
+        <section class="completion-section container" id="complete" data-progress-section>
+          <h2>{courseData.completion.heading}</h2>
+          <p class="completion-reminder"><strong>Remember:</strong> {courseData.completion.reminder.replace("Remember: ", "")}</p>
+          <p>{courseData.completion.resources}</p>
+          <footer class="course-footer">
+            <button class="return-button" type="button">{courseData.completion.returnLabel}</button>
+            <p class="sr-only return-status" id="return-help" aria-live="polite"></p>
+          </footer>
+        </section>
+      </div>
     </main>
 
-    <footer class="course-footer container">
-      <span aria-hidden="true"></span>
-      <a class="course-return" href={courseData.footer.url}>{courseData.footer.button} <span aria-hidden="true">&#8250;</span></a>
-    </footer>
     <a class="back-to-top" href="#top" aria-label="Back to top">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 14 7-7 7 7M5 19l7-7 7 7" /></svg>
     </a>
@@ -143,95 +120,156 @@ import CourseLayout from "../layouts/CourseLayout.astro";
 
   <script>
     type SavedProgress = {
+      version?: number;
       currentSection?: string;
       completed?: boolean;
-      revealedHeritage?: string[];
+      viewedSections?: string[];
+      interactions?: Record<string, any>;
     };
 
-    const storageKey = "champion-at-tfg-course-progress-v1";
+    const storageKey = "payflex-on-onex-progress-v1";
     const scorm = (window as any).CourseSCORM;
     const navToggle = document.querySelector<HTMLButtonElement>(".nav-toggle");
     const links = document.querySelector<HTMLElement>(".course-links");
-    const courseReturn = document.querySelector<HTMLAnchorElement>(".course-return");
     const backToTop = document.querySelector<HTMLAnchorElement>(".back-to-top");
+    const returnButton = document.querySelector<HTMLButtonElement>(".return-button");
+    const returnStatus = document.querySelector<HTMLElement>(".return-status");
     const sectionLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>(".course-links a"));
-    const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-nav-section]"));
-    let savedProgress: SavedProgress = {};
+    const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-progress-section]"));
+    const requiredSectionIds = sections.map((section) => section.id);
+    const allowedSectionIds = new Set(requiredSectionIds);
+    const sectionById = new Map(sections.map((section) => [section.id, section]));
+    const requiredKnowledgeChecks = ["kc-tender-order", "kc-excluded-products", "kc-refund", "kc-support"];
+    const suspendDataLimit = 4096;
+    const scormReady = scorm?.initialize?.() ?? false;
+    const lmsStatus = scormReady ? String(scorm?.getLessonStatus?.() || "").toLowerCase() : "";
 
-    try { savedProgress = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch {}
-    if (!savedProgress.currentSection) {
-      try { savedProgress = JSON.parse(scorm?.getSuspendData?.() || "{}"); } catch {}
+    const validSectionId = (value: unknown): value is string => typeof value === "string" && sectionById.has(value);
+    const validStringList = (value: unknown) => Array.isArray(value)
+      ? [...new Set(value.filter((item): item is string => typeof item === "string" && allowedSectionIds.has(item)))]
+      : [];
+    const normalizeProgress = (value: unknown): SavedProgress => {
+      const source = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {};
+      const currentSection = validSectionId(source.currentSection) ? source.currentSection : undefined;
+      return {
+        version: 1,
+        ...(currentSection ? { currentSection } : {}),
+        completed: source.completed === true,
+        viewedSections: validStringList(source.viewedSections),
+        interactions: source.interactions && typeof source.interactions === "object" && !Array.isArray(source.interactions) ? source.interactions : {},
+      };
+    };
+
+    let savedProgress: SavedProgress = normalizeProgress({});
+    if (scormReady) {
+      try { savedProgress = normalizeProgress(JSON.parse(scorm?.getSuspendData?.() || "{}")); } catch {}
+    } else {
+      try { savedProgress = normalizeProgress(JSON.parse(localStorage.getItem(storageKey) || "{}")); } catch {}
     }
-    savedProgress.revealedHeritage ??= [];
+    const bookmarkedSection = scormReady ? String(scorm?.getLessonLocation?.() || "") : "";
+    const resumeSection = savedProgress.currentSection || (validSectionId(bookmarkedSection) ? bookmarkedSection : undefined);
+    if (resumeSection) {
+      savedProgress.currentSection = resumeSection;
+      savedProgress.viewedSections = [...new Set([...(savedProgress.viewedSections || []), resumeSection])];
+    }
+    if (lmsStatus === "completed" || lmsStatus === "passed") savedProgress.completed = true;
 
+    let lastCommittedFingerprint = "";
+    let lastSaveSucceeded: boolean | null = null;
+    const serializedProgress = () => {
+      savedProgress = normalizeProgress(savedProgress);
+      const fullState = JSON.stringify(savedProgress);
+      if (fullState.length <= suspendDataLimit) return fullState;
+      return JSON.stringify({ version: 1, currentSection: savedProgress.currentSection, completed: savedProgress.completed });
+    };
     const persistProgress = () => {
-      const serialized = JSON.stringify(savedProgress);
+      const serialized = serializedProgress();
+      const location = savedProgress.currentSection || "welcome";
+      const fingerprint = `${location}\n${serialized}`;
+      if (fingerprint === lastCommittedFingerprint && lastSaveSucceeded === true) return true;
       try { localStorage.setItem(storageKey, serialized); } catch {}
-      scorm?.setSuspendData?.(serialized);
+      lastSaveSucceeded = !scormReady || (scorm?.saveProgress?.(serialized, location) ?? false);
+      if (lastSaveSucceeded) lastCommittedFingerprint = fingerprint;
+      return lastSaveSucceeded;
     };
 
-    const completeCourse = () => {
-      savedProgress.completed = true;
-      persistProgress();
-      return scorm?.setCompleted?.() ?? false;
+    const completionRequirementsMet = () => {
+      if (savedProgress.completed) return true;
+      const viewed = new Set(savedProgress.viewedSections || []);
+      const interactions = savedProgress.interactions || {};
+      return requiredSectionIds.every((id) => viewed.has(id))
+        && requiredKnowledgeChecks.every((id) => interactions[id]?.submitted === true)
+        && interactions["allowed-excluded-sort"]?.complete === true
+        && interactions["final-challenge-activity"]?.complete === true;
     };
+    const updateReturnState = () => {
+      const ready = completionRequirementsMet();
+      returnButton?.classList.toggle("is-ready", ready);
+      returnButton?.setAttribute("aria-disabled", String(!ready));
+      if (returnStatus && ready) returnStatus.textContent = "";
+    };
+
+    (window as any).CourseState = {
+      getInteraction: (id: string) => savedProgress.interactions?.[id],
+      setInteraction: (id: string, value: unknown) => {
+        savedProgress.interactions = { ...(savedProgress.interactions || {}), [id]: value };
+        persistProgress(); updateReturnState();
+      },
+    };
+    window.dispatchEvent(new CustomEvent("course-state-ready"));
 
     const setBackToTopVisibility = () => backToTop?.classList.toggle("is-visible", window.scrollY > 500);
-    window.addEventListener("scroll", setBackToTopVisibility, { passive: true });
-    setBackToTopVisibility();
-
+    window.addEventListener("scroll", setBackToTopVisibility, { passive: true }); setBackToTopVisibility();
     backToTop?.addEventListener("click", (event) => {
       event.preventDefault();
-      const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-      window.scrollTo({ top: 0, left: 0, behavior });
+      window.scrollTo({ top: 0, left: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     });
-
     navToggle?.addEventListener("click", () => {
       const open = navToggle.getAttribute("aria-expanded") === "true";
-      navToggle.setAttribute("aria-expanded", String(!open));
-      links?.classList.toggle("is-open", !open);
+      navToggle.setAttribute("aria-expanded", String(!open)); links?.classList.toggle("is-open", !open);
     });
+    sectionLinks.forEach((link) => link.addEventListener("click", () => { navToggle?.setAttribute("aria-expanded", "false"); links?.classList.remove("is-open"); }));
 
-    sectionLinks.forEach((link) => link.addEventListener("click", () => {
-      navToggle?.setAttribute("aria-expanded", "false");
-      links?.classList.remove("is-open");
-    }));
+    let restoredBookmarkGuard = resumeSection;
+    const startProgressObservers = () => {
+      const observer = new IntersectionObserver((entries) => {
+        const intersecting = entries.filter((entry) => entry.isIntersecting); if (!intersecting.length) return;
+        const viewed = new Set(savedProgress.viewedSections || []);
+        intersecting.forEach((entry) => { const id = (entry.target as HTMLElement).id; if (validSectionId(id)) viewed.add(id); });
+        const visible = intersecting.sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        const visibleId = (visible.target as HTMLElement).id;
+        const nextSection = restoredBookmarkGuard || visibleId; if (!validSectionId(nextSection)) return;
+        const previous = JSON.stringify(savedProgress);
+        savedProgress.viewedSections = [...viewed]; savedProgress.currentSection = nextSection;
+        const activeLink = sectionLinks.find((link) => link.getAttribute("href") === `#${nextSection}` || document.querySelector(link.getAttribute("href") || "")?.contains(sectionById.get(nextSection) || null));
+        if (activeLink) sectionLinks.forEach((link) => link.classList.toggle("active", link === activeLink));
+        if (JSON.stringify(savedProgress) !== previous) persistProgress();
+        updateReturnState();
+      }, { rootMargin: "-15% 0px -40%", threshold: [0, .05, .3] });
+      sections.forEach((section) => observer.observe(section));
+      if (restoredBookmarkGuard) window.setTimeout(() => { restoredBookmarkGuard = undefined; }, 250);
+    };
+    ["wheel", "touchstart", "pointerdown", "keydown"].forEach((eventName) => window.addEventListener(eventName, () => { restoredBookmarkGuard = undefined; }, { once: true, passive: true }));
 
-    document.querySelectorAll<HTMLElement>("[data-heritage-card]").forEach((card) => {
-      const id = card.dataset.heritageCard || "";
-      const trigger = card.querySelector<HTMLButtonElement>(".heritage-trigger");
-      const detail = card.querySelector<HTMLElement>(".heritage-detail");
-      const label = card.querySelector<HTMLElement>(".heritage-prompt-label");
-      const setOpen = (open: boolean) => {
-        card.classList.toggle("is-open", open);
-        trigger?.setAttribute("aria-expanded", String(open));
-        if (detail) detail.hidden = !open;
-        if (label) label.textContent = open ? "Hide story" : "Reveal story";
-      };
-      setOpen(savedProgress.revealedHeritage?.includes(id) ?? false);
-      trigger?.addEventListener("click", () => {
-        const open = trigger.getAttribute("aria-expanded") !== "true";
-        setOpen(open);
-        const revealed = new Set(savedProgress.revealedHeritage);
-        open ? revealed.add(id) : revealed.delete(id);
-        savedProgress.revealedHeritage = [...revealed];
-        persistProgress();
-      });
-    });
-
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (!visible) return;
-      sectionLinks.forEach((link) => {
-        link.classList.toggle("active", link.getAttribute("href") === `#${visible.target.id}`);
-      });
-      savedProgress.currentSection = visible.target.id;
+    returnButton?.addEventListener("click", () => {
+      if (!completionRequirementsMet()) {
+        if (returnStatus) returnStatus.textContent = "Complete all sections, submit all four knowledge checks, finish the product sort and successfully complete the Final Challenge before returning.";
+        return;
+      }
+      savedProgress.completed = true;
       persistProgress();
-    }, { rootMargin: "-20% 0px -65%", threshold: [0.05, 0.3, 0.6] });
+      const completed = !scormReady || (scorm?.setCompleted?.() ?? false);
+      if (!completed) { if (returnStatus) { returnStatus.textContent = "Your completion could not be saved. Please try again before closing the course."; returnStatus.focus(); } return; }
+      if (scormReady) scorm?.finish?.();
+      if (returnStatus) returnStatus.textContent = "Completion saved. Returning to People Connect.";
+      window.setTimeout(() => { if (window.opener) window.close(); }, 100);
+    });
 
-    sections.forEach((section) => observer.observe(section));
-    courseReturn?.addEventListener("click", completeCourse);
+    const restoredElement = resumeSection ? sectionById.get(resumeSection) : undefined;
+    if (restoredElement) {
+      const restoreOnce = () => { restoredElement.scrollIntoView({ behavior: "auto", block: "start" }); requestAnimationFrame(() => requestAnimationFrame(startProgressObservers)); };
+      if (document.readyState === "complete") restoreOnce(); else window.addEventListener("load", restoreOnce, { once: true });
+    } else startProgressObservers();
+    updateReturnState();
   </script>
 </CourseLayout>

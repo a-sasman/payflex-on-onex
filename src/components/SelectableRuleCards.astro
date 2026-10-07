@@ -1,0 +1,43 @@
+---
+interface RuleCard { id: string; title: string; copy: string; icon?: string; }
+interface Props { id: string; legend: string; cards: RuleCard[]; }
+const { id, legend, cards } = Astro.props as Props;
+---
+
+<rule-card-selector data-interaction-id={id} class="interaction-block">
+  <fieldset>
+    <legend>{legend}</legend>
+    <div class="rule-card-grid">
+      {cards.map((card) => (
+        <button class="rule-card" type="button" data-value={card.id} aria-pressed="false">
+          {card.icon && <img src={card.icon} alt="" aria-hidden="true" />}
+          <strong>{card.title}</strong><span>{card.copy}</span>
+        </button>
+      ))}
+    </div>
+  </fieldset>
+  <p class="interaction-status" aria-live="polite"></p>
+</rule-card-selector>
+
+<script>
+  import { readInteraction, whenCourseStateReady, writeInteraction } from "../scripts/interaction-state";
+  if (!customElements.get("rule-card-selector")) customElements.define("rule-card-selector", class extends HTMLElement {
+    connectedCallback() {
+      const id = this.dataset.interactionId || "rule-cards";
+      const buttons = [...this.querySelectorAll<HTMLButtonElement>(".rule-card")];
+      const status = this.querySelector<HTMLElement>(".interaction-status");
+      const restore = () => {
+        const selected = new Set(readInteraction<string[]>(id) || []);
+        buttons.forEach((button) => button.setAttribute("aria-pressed", String(selected.has(button.dataset.value || ""))));
+        if (status && selected.size) status.textContent = `${selected.size} of ${buttons.length} cards selected.`;
+      };
+      buttons.forEach((button) => button.addEventListener("click", () => {
+        button.setAttribute("aria-pressed", String(button.getAttribute("aria-pressed") !== "true"));
+        const selected = buttons.filter((item) => item.getAttribute("aria-pressed") === "true").map((item) => item.dataset.value || "");
+        writeInteraction(id, selected);
+        if (status) status.textContent = `${selected.length} of ${buttons.length} cards selected.`;
+      }));
+      restore(); whenCourseStateReady(restore);
+    }
+  });
+</script>

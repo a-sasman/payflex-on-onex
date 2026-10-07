@@ -1,0 +1,33 @@
+---
+import type { TableColumn, TableRow } from "../data/course";
+
+interface Props {
+  columns: TableColumn[];
+  rows: TableRow[];
+  label: string;
+  tone?: "light" | "dark";
+}
+
+const { columns, rows, label, tone = "light" } = Astro.props as Props;
+---
+
+<div class:list={["responsive-table", `responsive-table--${tone}`]} role="region" aria-label={label} tabindex="0">
+  <table>
+    <caption class="sr-only">{label}</caption>
+    <thead>
+      <tr>
+        {columns.map((column) => <th scope="col">{column.label}</th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row) => (
+        <tr>
+          {columns.map((column, index) => index === 0
+            ? <th scope="row">{row[column.key]}</th>
+            : <td>{row[column.key]}</td>)}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+<p class="table-scroll-hint">Scroll horizontally to view the complete table.</p>

@@ -5,7 +5,7 @@ import { deflateRawSync } from "node:zlib";
 
 const root = process.cwd();
 const dist = path.join(root, "dist");
-const packageName = "champion-at-tfg.zip";
+const packageName = "payflex-on-onex-scorm-1.2.zip";
 const packagePath = path.join(root, packageName);
 const schemaDirectory = path.join(root, "scripts", "scorm-1.2-schemas");
 const schemaFiles = [
@@ -61,7 +61,7 @@ function manifestFor(files) {
     .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<manifest identifier="CHAMPION_AT_TFG_SCORM_12"
+<manifest identifier="PAYFLEX_ON_ONEX_SCORM_12"
   version="1.0"
   xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
   xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
@@ -71,16 +71,16 @@ function manifestFor(files) {
     <schema>ADL SCORM</schema>
     <schemaversion>1.2</schemaversion>
   </metadata>
-  <organizations default="CHAMPION_ORG">
-    <organization identifier="CHAMPION_ORG">
-      <title>Champion at TFG: The Brand Worth Talking About</title>
-      <item identifier="CHAMPION_ITEM" identifierref="CHAMPION_RESOURCE">
-        <title>Champion at TFG: The Brand Worth Talking About</title>
+  <organizations default="PAYFLEX_ON_ONEX_ORG">
+    <organization identifier="PAYFLEX_ON_ONEX_ORG">
+      <title>Payflex on oneX</title>
+      <item identifier="PAYFLEX_ON_ONEX_ITEM" identifierref="PAYFLEX_ON_ONEX_RESOURCE">
+        <title>Payflex on oneX</title>
       </item>
     </organization>
   </organizations>
   <resources>
-    <resource identifier="CHAMPION_RESOURCE" type="webcontent" adlcp:scormtype="sco" href="index.html">
+    <resource identifier="PAYFLEX_ON_ONEX_RESOURCE" type="webcontent" adlcp:scormtype="sco" href="index.html">
 ${fileEntries}
     </resource>
   </resources>
@@ -211,10 +211,13 @@ await validateReferences(files);
 const manifest = await readFile(path.join(dist, "imsmanifest.xml"), "utf8");
 const wrapper = await readFile(path.join(dist, "course-runtime.js"), "utf8");
 if (!manifest.includes('href="index.html"')) throw new Error("Manifest launch file is not index.html");
+if (!manifest.includes("<title>Payflex on oneX</title>")) throw new Error("Manifest title is not Payflex on oneX");
 if (/masteryscore|adlcp:masteryscore|\bpassed\b|\bfailed\b/i.test(manifest)) throw new Error("Manifest contains score or pass/fail requirements");
 for (const required of [
   "LMSInitialize",
   "cmi.core.lesson_status",
+  "cmi.core.entry",
+  "cmi.core.lesson_location",
   "cmi.core.session_time",
   "cmi.core.total_time",
   "cmi.core.exit",
@@ -224,6 +227,7 @@ for (const required of [
   "suspend",
   "LMSCommit",
   "LMSFinish",
+  "saveProgress",
 ]) {
   if (!wrapper.includes(required)) throw new Error(`SCORM wrapper is missing ${required}`);
 }
@@ -262,6 +266,9 @@ const lmsWindow = {
 };
 lmsWindow.parent = lmsWindow;
 vm.runInNewContext(wrapper, { window: lmsWindow });
+if (lmsCalls.some(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "completed")) {
+  throw new Error("SCORM wrapper completed the course automatically on launch");
+}
 lmsWindow.CourseSCORM.setSuspendData('{"current":3,"completed":true}');
 lmsWindow.CourseSCORM.setCompleted();
 const completionStatus = lmsWindow.CourseSCORM.getCompletionStatus();
@@ -271,7 +278,13 @@ lmsListeners.pagehide();
 const statuses = lmsCalls
   .filter(([method, element]) => method === "LMSSetValue" && element === "cmi.core.lesson_status")
   .map(([, , value]) => value);
-if (!statuses.includes("incomplete") || !statuses.includes("completed")) throw new Error("SCORM status lifecycle validation failed");
+if (!statuses.includes("incomplete") || !statuses.includes("completed")) throw new Error("SCORM earned-completion lifecycle validation failed");
+const incompleteWriteIndex = lmsCalls.findIndex(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "incomplete");
+const incompleteCommitIndex = lmsCalls.findIndex(([method], index) => method === "LMSCommit" && index > incompleteWriteIndex);
+if (incompleteWriteIndex < 0 || incompleteCommitIndex < 0) throw new Error("SCORM incomplete launch status was not committed");
+const completedWriteIndex = lmsCalls.findIndex(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "completed");
+const completionCommitIndex = lmsCalls.findIndex(([method], index) => method === "LMSCommit" && index > completedWriteIndex);
+if (completedWriteIndex < 0 || completionCommitIndex < 0) throw new Error("SCORM earned completion was not committed");
 if (completionStatus !== "completed") throw new Error("SCORM completion status alias validation failed");
 if (totalTime !== "0001:02:03.45") throw new Error("SCORM total time retrieval validation failed");
 const sessionTimes = lmsCalls
@@ -288,6 +301,8 @@ if (!lmsCalls.some(([method, element, value]) => (
 if (!lmsCalls.some(([method]) => method === "LMSCommit")) throw new Error("SCORM commit validation failed");
 if (!lmsCalls.some(([method]) => method === "LMSFinish")) throw new Error("SCORM finish validation failed");
 if (lmsCalls.some((call) => /score|mastery|passed|failed/i.test(call.join(" ")))) throw new Error("SCORM wrapper emitted score or pass/fail data");
+
+await import("./verify-scorm.mjs");
 
 await createZip(packagePath, files);
 
