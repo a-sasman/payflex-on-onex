@@ -19,8 +19,13 @@ export const courseData = {
     heading: "The oneX journey",
     paragraphs: [
       "A customer is ready to pay with Payflex. Use the oneX navigation guide to follow the journey from selecting the tender to completing the sale.",
-      "As you go, look out for three things: the tender order, the customer approval and the final system confirmation.",
     ],
+    focus: {
+      lead: "As you go, look out for three things:",
+      tenderOrder: "tender order",
+      customerApproval: "customer approval",
+      finalConfirmation: "final system confirmation",
+    },
     guideUnavailable: "The oneX navigation guide has not been supplied with the course source files.",
   },
   rules: {
@@ -39,6 +44,7 @@ export const courseData = {
   knowledgeChecks: {
     tender: {
       id: "kc-tender-order",
+      questionBreakBefore: "What should happen next?",
       question: "A customer’s total is R800. The customer wants to use a R300 gift card and Payflex for the rest. What should happen next?",
       correctId: "b",
       options: [
@@ -52,6 +58,7 @@ export const courseData = {
     },
     exclusions: {
       id: "kc-excluded-products",
+      questionBreakBefore: "What is the best response?",
       question: "A customer has a hoodie, airtime and a TFG gift card in the basket. The customer wants to use Payflex. What is the best response?",
       correctId: "c",
       options: [
@@ -65,6 +72,7 @@ export const courseData = {
     },
     refund: {
       id: "kc-refund",
+      questionBreakBefore: "What should you say?",
       question: "A customer returns an item bought with Payflex and asks for cash. What should you say?",
       correctId: "c",
       options: [
@@ -78,6 +86,7 @@ export const courseData = {
     },
     support: {
       id: "kc-support",
+      questionBreakBefore: "What should you do next?",
       question: "You have signed out, cleared the cache and logged back in, but Payflex is still missing. What should you do next?",
       correctId: "c",
       options: [
@@ -95,7 +104,7 @@ export const courseData = {
     copy: "Not everything in the basket can be paid for with Payflex. TFG gift cards, airtime, data, 1Voucher and other Value-Added Services are excluded. If the basket contains one of these items, tell the customer before you take payment.",
     sort: {
       id: "allowed-excluded-sort",
-      legend: "Sort each product into Allowed or Excluded",
+      legend: "For each item, select whether it is Allowed or Excluded from being processed using Payflex.",
       products: [
         { id: "merchandise", label: "Ordinary merchandise", category: "allowed" },
         { id: "gift-card", label: "TFG gift cards", category: "excluded" },
@@ -109,15 +118,28 @@ export const courseData = {
   },
   returns: {
     heading: "Returns",
-    copy: "A customer can return an item bought with Payflex, but the refund cannot go back to Payflex. Cash refunds are also not allowed. Use an approved refund method instead.",
+    copy: "Payflex returns are not yet supported in oneX. Even if the original purchase was made with Payflex, the refund itself must go through a different tender type.",
+    example: "Example: A customer returns a dress originally bought with Payflex. You process the refund onto a gift card or back to their debit or credit card, not Payflex.",
     journey: {
       id: "returns-journey",
-      title: "Follow the return journey",
+      title: "Refund Rules",
+      description: "Returns work a little differently when the original purchase was made with Payflex. Keep these rules in mind whenever a customer brings back an item they paid for this way.",
       steps: [
-        { title: "Return the item", copy: "Follow the returns process for the item." },
-        { title: "Do not refund to Payflex", copy: "The refund cannot go back to Payflex." },
-        { title: "Do not refund in cash", copy: "Cash refunds are not allowed." },
-        { title: "Use an approved method", copy: "Use an approved refund method instead." },
+        {
+          title: "Rule 1: Refunds Cannot Be Processed Back To Payflex",
+          copy: "Payflex returns are not yet supported in oneX. Even if the original purchase was made with Payflex, the refund itself must go through a different tender type.",
+          example: "Example: A customer returns a dress originally bought with Payflex. You process the refund onto a gift card or back to their debit or credit card, not Payflex.",
+        },
+        {
+          title: "Rule 2: Never Give A Cash Refund For A Payflex Purchase",
+          copy: "Cash must never be used as the tender type for a return, and this applies especially to items originally bought with Payflex.",
+          example: "Example: A customer insists on cash back for a Payflex item. Explain that cash refunds are not allowed and offer a gift card, EFT, or card refund instead.",
+        },
+        {
+          title: "Rule 3: Use A Standard Tender Type To Complete The Refund",
+          copy: "Accepted refund methods for a Payflex purchase are EFT, debit or credit card, or a TFG gift card.",
+          example: "Example: You are refunding R600 for a returned item bought with Payflex. You process the refund to the customer's debit card.",
+        },
       ],
     },
   },
@@ -146,8 +168,8 @@ export const courseData = {
         title: "Decision 1: Identify the excluded item",
         prompt: "Which basket item is excluded from Payflex?",
         choices: [
-          { id: "airtime", label: "Airtime", feedback: "Correct. Airtime is excluded and needs another tender.", correct: true },
           { id: "clothing", label: "Clothing", feedback: "Clothing is the eligible merchandise in this scenario.", correct: false },
+          { id: "airtime", label: "Airtime", feedback: "Airtime is excluded and needs another tender.", correct: true },
           { id: "both", label: "Both clothing and airtime", feedback: "Only the airtime is excluded in this scenario.", correct: false },
           { id: "neither", label: "Neither item", feedback: "Airtime is excluded from Payflex.", correct: false },
         ],
@@ -156,9 +178,9 @@ export const courseData = {
         title: "Decision 2: Apply the tenders",
         prompt: "Which tender should be applied first?",
         choices: [
-          { id: "gift-first", label: "Apply the gift card first", feedback: "Correct. Other tenders come first and Payflex comes last.", correct: true },
           { id: "payflex-first", label: "Select Payflex first", feedback: "Payflex must be selected last.", correct: false },
           { id: "customer-order", label: "Let the customer choose the order", feedback: "The tender order is fixed: other tenders first, Payflex last.", correct: false },
+          { id: "gift-first", label: "Apply the gift card first", feedback: "Other tenders come first and Payflex comes last.", correct: true },
           { id: "airtime-payflex", label: "Put the airtime on Payflex first", feedback: "Airtime is excluded from Payflex.", correct: false },
         ],
       },
@@ -166,18 +188,18 @@ export const courseData = {
         title: "Decision 3: Use Payflex correctly",
         prompt: "What should Payflex cover?",
         choices: [
-          { id: "eligible-balance", label: "The full eligible remaining balance", feedback: "Correct. Payflex covers the full eligible remaining balance.", correct: true },
           { id: "airtime", label: "The airtime", feedback: "Airtime is excluded and needs another tender.", correct: false },
           { id: "part-balance", label: "Only part of the eligible balance", feedback: "Payflex covers the full remaining eligible balance.", correct: false },
           { id: "full-basket", label: "The full basket including airtime", feedback: "Excluded products cannot be paid for with Payflex.", correct: false },
+          { id: "eligible-balance", label: "The full eligible remaining balance", feedback: "Payflex covers the full eligible remaining balance.", correct: true },
         ],
       },
       {
         title: "Decision 4: Get support",
         prompt: "Payflex is still missing after sign-out, cache clear and login. What should you do?",
         choices: [
-          { id: "support", label: "Log a call with Synergy or contact Store Tech Support", feedback: "Correct. Store Tech Support: 021 937 4499.", correct: true },
           { id: "repeat", label: "Keep repeating the transaction", feedback: "Escalate after the troubleshooting steps do not restore Payflex.", correct: false },
+          { id: "support", label: "Log a call with Synergy or contact Store Tech Support", feedback: "Store Tech Support: 021 937 4499.", correct: true },
           { id: "manual", label: "Add Payflex manually", feedback: "Do not add Payflex manually.", correct: false },
           { id: "change-card", label: "Ask the customer to change cards", feedback: "Use the taught support route instead.", correct: false },
         ],

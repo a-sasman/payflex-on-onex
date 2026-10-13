@@ -1,13 +1,20 @@
 ---
-interface JourneyStep { title: string; copy: string; }
-interface Props { id: string; title: string; steps: JourneyStep[]; }
-const { id, title, steps } = Astro.props as Props;
+interface JourneyStep { title: string; copy: string; example: string; }
+interface Props { id: string; title: string; description: string; steps: JourneyStep[]; }
+const { id, title, description, steps } = Astro.props as Props;
 ---
 
 <returns-journey data-interaction-id={id} class="interaction-block">
   <h3>{title}</h3>
+  <p class="journey-description">{description}</p>
   <ol class="journey-steps">
-    {steps.map((step, index) => <li data-step={index} hidden={index > 0}><strong>{step.title}</strong><p>{step.copy}</p></li>)}
+    {steps.map((step, index) => (
+      <li data-step={index} hidden={index > 0}>
+        <strong>{step.title}</strong>
+        <p>{step.copy}</p>
+        <p><em>{step.example}</em></p>
+      </li>
+    ))}
   </ol>
   <div class="interaction-actions">
     <button class="interaction-button" type="button" data-action="back" disabled>Previous step</button>

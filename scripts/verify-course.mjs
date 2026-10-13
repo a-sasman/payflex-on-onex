@@ -52,8 +52,17 @@ async function exerciseRequiredInteractions(page) {
   for (let index = 0; index < 4; index += 1) {
     const part = page.locator(`branching-challenge [data-part="${index}"]`);
     await part.locator('[data-correct="true"]').click();
+    const feedback = (await part.locator(".interaction-feedback").innerText()).trim();
+    if (!feedback.startsWith("Correct. ") || /^Correct\.\s*Correct\./.test(feedback)) errors.push(`challenge part ${index + 1} has incorrect success feedback: ${feedback}`);
     await part.locator(".challenge-next").click();
   }
+  const challenge = page.locator("branching-challenge");
+  if (!(await challenge.isVisible()) || !(await challenge.locator('[data-part="3"]').isVisible()) || (await challenge.locator('[data-part="3"] .challenge-next').innerText()).trim() !== "Challenge complete") errors.push("completed Final Challenge did not remain visible on its final step");
+  const completedPart = challenge.locator('[data-part="3"]');
+  const reviewChoice = completedPart.locator('[data-correct="false"]').first();
+  await reviewChoice.click();
+  if (await reviewChoice.getAttribute("aria-pressed") !== "true" || !(await completedPart.locator(".interaction-feedback").innerText()).startsWith("Not quite.")) errors.push("completed Final Challenge choices cannot be reviewed");
+  await completedPart.locator('[data-correct="true"]').click();
 }
 
 try {
@@ -71,18 +80,35 @@ try {
     }
     if (/\[[A-Z][A-Z\s-]+\]/.test(mainText)) errors.push(`${viewport.name} contains placeholder copy`);
     if (/Quick Course|Hypnos|Cotton Origins/i.test(mainText)) errors.push(`${viewport.name} contains previous-course identity`);
-    if (await page.locator("rule-card-selector .rule-card").count() !== 5) errors.push(`${viewport.name} does not render five rules`);
+    if (await page.locator(".rule-card-list .rule-card").count() !== 5) errors.push(`${viewport.name} does not render five rules`);
+    if (await page.locator(".rule-card-list button, .rules-section .interaction-status").count()) errors.push(`${viewport.name} five rules still render interactive controls or selection status`);
     if (await page.locator("knowledge-check").count() !== 4 || await page.locator("knowledge-check input").count() !== 16) errors.push(`${viewport.name} does not render four four-option checks`);
+    const prefixedOptions = await page.locator("knowledge-check .option-list span").evaluateAll((options) => options.filter((option) => /^[A-D]\.\s/.test(option.textContent ?? "")).map((option) => option.textContent));
+    if (prefixedOptions.length) errors.push(`${viewport.name} knowledge-check options still show letter prefixes: ${prefixedOptions.join(", ")}`);
     if (await page.locator('knowledge-check button[type="submit"]').count()) errors.push(`${viewport.name} knowledge checks still render submit controls`);
     if (await page.locator("product-sort .sort-card").count() !== 6) errors.push(`${viewport.name} does not render the allowed/excluded sort`);
+    const exclusionTypeStyles = await page.locator(".exclusions-section .policy-pill").evaluate((panel) => [...panel.querySelectorAll("h2, p")].map((element) => getComputedStyle(element).fontStyle));
+    if (exclusionTypeStyles.some((fontStyle) => fontStyle !== "normal")) errors.push(`${viewport.name} exclusions copy is italicized`);
+    const returnsPanel = page.locator(".returns-section .policy-pill");
+    const returnsTypeStyles = await returnsPanel.evaluate((panel) => [...panel.querySelectorAll("h2, p")].map((element) => getComputedStyle(element).fontStyle));
+    if (returnsTypeStyles.some((fontStyle) => fontStyle !== "normal")) errors.push(`${viewport.name} returns copy is italicized`);
+    if (await returnsPanel.locator("p").count() !== 2 || !(await returnsPanel.innerText()).includes("Payflex returns are not yet supported in oneX.") || !(await returnsPanel.innerText()).includes("Example: A customer returns a dress originally bought with Payflex.")) errors.push(`${viewport.name} returns guidance or example is missing`);
     if (await page.locator("returns-journey, missing-step-reveal").count() !== 2) errors.push(`${viewport.name} is missing a journey or support steps`);
+    const refundRules = page.locator("returns-journey");
+    if ((await refundRules.locator("h3").textContent())?.trim() !== "Refund Rules" || !(await refundRules.locator(".journey-description").innerText()).startsWith("Returns work a little differently")) errors.push(`${viewport.name} refund-rules heading or description is missing`);
+    if (await refundRules.locator(".journey-steps li").count() !== 3 || await refundRules.locator(".journey-steps li strong").count() !== 3 || await refundRules.locator(".journey-steps li em").count() !== 3) errors.push(`${viewport.name} does not render three refund rules with examples`);
     if (await page.locator("missing-step-reveal .missing-step-list li").count() !== 4 || await page.locator("missing-step-reveal button").count()) errors.push(`${viewport.name} support steps are not fully visible as static content`);
     if (!(await page.locator("missing-step-reveal").innerText()).includes("2. Clear the cache in Settings")) errors.push(`${viewport.name} support step 2 is not visible`);
     if (await page.locator("branching-challenge .challenge-part").count() !== 4) errors.push(`${viewport.name} does not render four challenge stages`);
+    const correctChoicePositions = await page.locator("branching-challenge .challenge-part").evaluateAll((parts) => parts.map((part) => [...part.querySelectorAll("[data-choice]")].findIndex((choice) => choice.getAttribute("data-correct") === "true")));
+    if (correctChoicePositions.some((position) => position <= 0) || new Set(correctChoicePositions).size < 3) errors.push(`${viewport.name} Final Challenge correct answers are not sufficiently mixed`);
     const footerControl = page.locator(".return-button");
     const footerStyle = await footerControl.evaluate((button) => ({ color: getComputedStyle(button).color, background: getComputedStyle(button).backgroundColor }));
     if (await footerControl.locator("span").count() || footerStyle.color !== "rgb(255, 255, 255)" || footerStyle.background !== "rgba(0, 0, 0, 0)") errors.push(`${viewport.name} return footer is not plain white text`);
     if (!(await page.locator(".return-status").evaluate((status) => status.classList.contains("sr-only"))) || mainText.includes("Course requirements complete. You can return to People Connect.")) errors.push(`${viewport.name} renders the removed return status message`);
+    const completionCopy = page.locator(".completion-copy");
+    const reminderBorder = await completionCopy.locator(".completion-reminder").evaluate((reminder) => getComputedStyle(reminder).borderTopWidth);
+    if (await completionCopy.locator("p").count() !== 2 || reminderBorder !== "0px") errors.push(`${viewport.name} completion copy is not grouped without a border`);
     const missingTargets = await page.evaluate(() => [...document.querySelectorAll('.course-links a[href^="#"]')].map((link) => link.getAttribute("href")).filter((href) => !href || !document.querySelector(href)));
     if (missingTargets.length) errors.push(`${viewport.name} has missing navigation targets: ${missingTargets.join(", ")}`);
     const unloadedImages = await page.locator("img").evaluateAll((images) => images.filter((image) => !image.complete || image.naturalWidth === 0).map((image) => image.getAttribute("src")));
@@ -91,9 +117,13 @@ try {
     if (layout.overflow) errors.push(`${viewport.name} has horizontal page overflow`);
     if (layout.clipped.length) errors.push(`${viewport.name} has clipped sections: ${layout.clipped.join(", ")}`);
 
-    const firstRule = page.locator(".rule-card").first();
-    if (viewport.width <= 500) await firstRule.tap(); else { await firstRule.focus(); await page.keyboard.press("Space"); }
-    if (await firstRule.getAttribute("aria-pressed") !== "true") errors.push(`${viewport.name} cannot activate a rule card`);
+    const questionLayouts = await page.locator("knowledge-check .question-copy").evaluateAll((questions) => questions.map((question) => [...question.querySelectorAll(":scope > span")].map((line) => {
+      const box = line.getBoundingClientRect();
+      return { left: box.left, top: box.top, bottom: box.bottom };
+    })));
+    if (questionLayouts.length !== 4 || questionLayouts.some((lines) => lines.length !== 2 || Math.abs(lines[0].left - lines[1].left) > 1 || lines[1].top < lines[0].bottom)) {
+      errors.push(`${viewport.name} one or more knowledge-check prompts are not on their own aligned line`);
+    }
     const firstCheck = page.locator("knowledge-check").first();
     await firstCheck.locator('input[value="a"]').check();
     if (!(await firstCheck.locator('input[value="a"]').evaluate((input) => input.closest("label")?.classList.contains("is-incorrect")))) errors.push(`${viewport.name} incorrect knowledge-check option was not marked`);
@@ -128,11 +158,9 @@ try {
   const localContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const localPage = await localContext.newPage(); monitor(localPage, "local fallback");
   await localPage.goto(baseUrl, { waitUntil: "networkidle" });
-  await localPage.locator(".rule-card").nth(2).click();
   const retryCheck = localPage.locator("knowledge-check").first();
   await retryCheck.locator('input[value="a"]').check();
   await localPage.reload({ waitUntil: "networkidle" });
-  if (await localPage.locator(".rule-card").nth(2).getAttribute("aria-pressed") !== "true") errors.push("local interaction state did not survive reload");
   const reloadedCheck = localPage.locator("knowledge-check").first();
   if (await reloadedCheck.locator("input").first().isDisabled()) errors.push("knowledge check remained locked after reload");
   if (await reloadedCheck.locator("input:checked").count()) errors.push("knowledge check restored a visible answer after reload");
@@ -189,7 +217,11 @@ try {
   if (completionResult.values["cmi.core.lesson_status"] !== "completed" || completionResult.values["cmi.core.exit"] !== "") errors.push("earned completion values were not retained");
   await completePage.reload({ waitUntil: "networkidle" });
   if ((await completePage.evaluate(() => window.__lmsValues["cmi.core.lesson_status"])) !== "completed") errors.push("completed LMS state did not survive reopen");
-  if (!(await completePage.locator("branching-challenge").isHidden())) errors.push("completed Final Challenge panel was restored after reopen");
+  const restartedChallenge = completePage.locator("branching-challenge");
+  const restartedFirstPart = restartedChallenge.locator('[data-part="0"]');
+  if (!(await restartedChallenge.isVisible()) || !(await restartedFirstPart.isVisible()) || await restartedChallenge.locator('[aria-pressed="true"]').count() || (await restartedFirstPart.locator(".interaction-feedback").innerText()).trim() || !(await restartedFirstPart.locator(".challenge-next").isDisabled())) errors.push("Final Challenge did not restart cleanly at Part 1 after reopen");
+  const storedChallengeState = await completePage.evaluate(() => window.CourseState.getInteraction("final-challenge-activity"));
+  if (storedChallengeState?.complete !== true || "current" in storedChallengeState || "answers" in storedChallengeState) errors.push("Final Challenge stored step or answer progress instead of completion only");
   await completeContext.close();
 } finally {
   await browser.close();
@@ -197,4 +229,4 @@ try {
 }
 
 if (errors.length) { console.error(errors.join("\n")); process.exitCode = 1; }
-else console.log("Payflex on oneX verification passed: content, assets, 11 responsive widths, mouse/keyboard/touch controls, instant retry-until-correct knowledge checks, correct sort, four successful challenge stages, local/LMS persistence, incomplete exit, earned completion, commit-before-finish, navigation and scroll-to-top.");
+else console.log("Payflex on oneX verification passed: content, assets, 11 responsive widths, mouse/keyboard/touch controls, instant retry-until-correct knowledge checks, correct sort, mixed-answer reset-on-load challenge, local/LMS completion persistence, incomplete exit, earned completion, commit-before-finish, navigation and scroll-to-top.");

@@ -1,8 +1,10 @@
 ---
 interface Option { id: string; label: string; }
-interface Props { id: string; question: string; options: Option[]; correctId: string; correctFeedback: string; incorrectFeedback: string; }
-const { id, question, options, correctId, correctFeedback } = Astro.props as Props;
+interface Props { id: string; question: string; questionBreakBefore?: string; options: Option[]; correctId: string; correctFeedback: string; incorrectFeedback: string; }
+const { id, question, questionBreakBefore, options, correctId, correctFeedback } = Astro.props as Props;
 const headingId = `${id}-heading`;
+const questionLead = questionBreakBefore ? question.slice(0, question.lastIndexOf(questionBreakBefore)).trimEnd() : question;
+const optionLabel = (label: string) => label.replace(/^[A-D]\.\s*/, "");
 ---
 
 <knowledge-check data-interaction-id={id} data-correct-id={correctId} class="interaction-block">
@@ -10,9 +12,13 @@ const headingId = `${id}-heading`;
   <form aria-labelledby={headingId}>
     <fieldset><legend class="sr-only">{question}</legend>
       <div class="knowledge-grid">
-        <p class="question-copy">{question}</p>
+        <p class:list={["question-copy", questionBreakBefore && "question-copy--split"]}>
+          {questionBreakBefore
+            ? <><span>{questionLead}</span><span>{questionBreakBefore}</span></>
+            : question}
+        </p>
         <div class="option-list">
-          {options.map((option) => <label><input type="radio" name={id} value={option.id} /> <span>{option.label}</span></label>)}
+          {options.map((option) => <label><input type="radio" name={id} value={option.id} /> <span>{optionLabel(option.label)}</span></label>)}
         </div>
       </div>
     </fieldset>

@@ -37,6 +37,11 @@ import CourseLayout from "../layouts/CourseLayout.astro";
               <section class="journey-copy" id="onex-journey" data-progress-section>
                 <h2>{courseData.journey.heading}</h2>
                 {courseData.journey.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+                <p>
+                  {courseData.journey.focus.lead} <strong>{courseData.journey.focus.tenderOrder}</strong>, the
+                  <strong> {courseData.journey.focus.customerApproval}</strong> and the
+                  <strong> {courseData.journey.focus.finalConfirmation}</strong>.
+                </p>
               </section>
             </div>
           </section>
@@ -73,6 +78,7 @@ import CourseLayout from "../layouts/CourseLayout.astro";
         <div class="policy-pill">
           <h2>{courseData.returns.heading}</h2>
           <p>{courseData.returns.copy}</p>
+          <p>{courseData.returns.example}</p>
         </div>
         <ReturnsJourney {...courseData.returns.journey} />
       </section>
@@ -103,8 +109,10 @@ import CourseLayout from "../layouts/CourseLayout.astro";
 
         <section class="completion-section container" id="complete" data-progress-section>
           <h2>{courseData.completion.heading}</h2>
-          <p class="completion-reminder"><strong>Remember:</strong> {courseData.completion.reminder.replace("Remember: ", "")}</p>
-          <p>{courseData.completion.resources}</p>
+          <div class="completion-copy">
+            <p class="completion-reminder"><strong>Remember:</strong> {courseData.completion.reminder.replace("Remember: ", "")}</p>
+            <p>{courseData.completion.resources}</p>
+          </div>
           <footer class="course-footer">
             <button class="return-button" type="button">{courseData.completion.returnLabel}</button>
             <p class="sr-only return-status" id="return-help" aria-live="polite"></p>
@@ -151,12 +159,14 @@ import CourseLayout from "../layouts/CourseLayout.astro";
     const normalizeProgress = (value: unknown): SavedProgress => {
       const source = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {};
       const currentSection = validSectionId(source.currentSection) ? source.currentSection : undefined;
+      const interactions = source.interactions && typeof source.interactions === "object" && !Array.isArray(source.interactions) ? { ...source.interactions } : {};
+      if (interactions["final-challenge-activity"]) interactions["final-challenge-activity"] = { complete: interactions["final-challenge-activity"].complete === true };
       return {
         version: 1,
         ...(currentSection ? { currentSection } : {}),
         completed: source.completed === true,
         viewedSections: validStringList(source.viewedSections),
-        interactions: source.interactions && typeof source.interactions === "object" && !Array.isArray(source.interactions) ? source.interactions : {},
+        interactions,
       };
     };
 
