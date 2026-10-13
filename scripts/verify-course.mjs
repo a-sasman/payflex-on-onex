@@ -72,7 +72,7 @@ try {
     const response = await page.goto(baseUrl, { waitUntil: "networkidle" });
     if (!response?.ok()) errors.push(`${viewport.name} returned HTTP ${response?.status() ?? "unknown"}`);
     if (await page.title() !== "Payflex on oneX") errors.push(`${viewport.name} has an incorrect title`);
-    if (await page.locator("[data-progress-section]").count() !== 12) errors.push(`${viewport.name} does not render all 12 course sections`);
+    if (await page.locator("[data-progress-section]").count() !== 11) errors.push(`${viewport.name} does not render all 11 tracked course sections`);
     if (await page.locator(".course-links a").count() !== 6) errors.push(`${viewport.name} does not render the production navigation`);
     const mainText = await page.locator("main").innerText();
     for (const expected of ["Welcome", "The oneX journey", "Five Rules", "Exclusions", "Returns", "When Payflex is missing", "Final challenge", "021 937 4499", "Well done. You can now apply the Payflex rules on oneX."]) {
@@ -102,10 +102,9 @@ try {
     if (await page.locator("branching-challenge .challenge-part").count() !== 4) errors.push(`${viewport.name} does not render four challenge stages`);
     const correctChoicePositions = await page.locator("branching-challenge .challenge-part").evaluateAll((parts) => parts.map((part) => [...part.querySelectorAll("[data-choice]")].findIndex((choice) => choice.getAttribute("data-correct") === "true")));
     if (correctChoicePositions.some((position) => position <= 0) || new Set(correctChoicePositions).size < 3) errors.push(`${viewport.name} Final Challenge correct answers are not sufficiently mixed`);
-    const footerControl = page.locator(".return-button");
-    const footerStyle = await footerControl.evaluate((button) => ({ color: getComputedStyle(button).color, background: getComputedStyle(button).backgroundColor }));
-    if (await footerControl.locator("span").count() || footerStyle.color !== "rgb(255, 255, 255)" || footerStyle.background !== "rgba(0, 0, 0, 0)") errors.push(`${viewport.name} return footer is not plain white text`);
-    if (!(await page.locator(".return-status").evaluate((status) => status.classList.contains("sr-only"))) || mainText.includes("Course requirements complete. You can return to People Connect.")) errors.push(`${viewport.name} renders the removed return status message`);
+    const footerCopy = page.locator(".return-copy");
+    const footerStyle = await footerCopy.evaluate((copy) => ({ color: getComputedStyle(copy).color, cursor: getComputedStyle(copy).cursor, decoration: getComputedStyle(copy).textDecorationLine, pointerEvents: getComputedStyle(copy).pointerEvents, hasClickHandler: copy.onclick !== null }));
+    if ((await footerCopy.innerText()).trim() !== "Return to People Connect to continue" || await page.locator(".course-footer button, .course-footer a").count() || await page.locator("#complete[data-progress-section]").count() || footerStyle.color !== "rgb(255, 255, 255)" || footerStyle.cursor !== "default" || footerStyle.decoration !== "none" || footerStyle.pointerEvents !== "none" || footerStyle.hasClickHandler) errors.push(`${viewport.name} return footer is not plain, static, or tracking-independent`);
     const completionCopy = page.locator(".completion-copy");
     const reminderBorder = await completionCopy.locator(".completion-reminder").evaluate((reminder) => getComputedStyle(reminder).borderTopWidth);
     if (await completionCopy.locator("p").count() !== 2 || reminderBorder !== "0px") errors.push(`${viewport.name} completion copy is not grouped without a border`);
@@ -168,30 +167,10 @@ try {
   await reloadedCheck.locator('input[value="b"]').check();
   if (!(await reloadedCheck.locator('input[value="b"]').evaluate((input) => input.closest("label")?.classList.contains("is-correct")))) errors.push("reloaded knowledge check could not accept a fresh answer");
   if ((await reloadedCheck.locator(".knowledge-feedback").textContent())?.trim() !== "Correct: All other tenders must be applied first. Payflex comes last and covers the full remaining balance.") errors.push("tender-order check did not display the exact storyboard feedback");
-  if (await localPage.locator(".return-button").evaluate((button) => button.classList.contains("is-ready"))) errors.push("local course was ready for completion without required participation");
   await localContext.close();
 
-  const incompleteContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-  await incompleteContext.addInitScript(() => {
-    const calls = []; const values = { "cmi.core.lesson_status": "not attempted", "cmi.core.total_time": "0000:00:00.00" };
-    window.__lmsCalls = calls; window.__lmsValues = values;
-    window.API = {
-      LMSInitialize(value) { calls.push(["LMSInitialize", value]); return "true"; }, LMSGetValue(element) { calls.push(["LMSGetValue", element]); return values[element] ?? ""; },
-      LMSSetValue(element, value) { calls.push(["LMSSetValue", element, value]); values[element] = value; return "true"; }, LMSCommit(value) { calls.push(["LMSCommit", value]); return "true"; }, LMSFinish(value) { calls.push(["LMSFinish", value]); return "true"; },
-    };
-  });
-  const incompletePage = await incompleteContext.newPage(); monitor(incompletePage, "incomplete LMS");
-  await incompletePage.goto(baseUrl, { waitUntil: "networkidle" });
-  if ((await incompletePage.evaluate(() => window.__lmsValues["cmi.core.lesson_status"])) !== "incomplete") errors.push("LMS launch did not remain incomplete");
-  if (await incompletePage.evaluate(() => window.__lmsCalls.some(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "completed"))) errors.push("LMS launch auto-completed the course");
-  await incompletePage.locator(".return-button").click({ force: true });
-  if (await incompletePage.evaluate(() => window.__lmsCalls.some(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "completed"))) errors.push("premature return completed the course");
-  const incompleteClose = await incompletePage.evaluate(() => { window.__lmsCalls.length = 0; const result = window.CourseSCORM.finish(); return { result, calls: window.__lmsCalls, values: window.__lmsValues }; });
-  if (!incompleteClose.result || incompleteClose.values["cmi.core.lesson_status"] !== "incomplete" || incompleteClose.values["cmi.core.exit"] !== "suspend") errors.push("incomplete close did not preserve suspend state");
-  await incompleteContext.close();
-
-  const completeContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-  await completeContext.addInitScript(() => {
+  const standardContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await standardContext.addInitScript(() => {
     const calls = []; const stored = sessionStorage.getItem("payflex-lms-values"); const values = stored ? JSON.parse(stored) : { "cmi.core.lesson_status": "not attempted", "cmi.core.total_time": "0000:00:00.00" };
     const save = () => sessionStorage.setItem("payflex-lms-values", JSON.stringify(values));
     window.__lmsCalls = calls; window.__lmsValues = values;
@@ -200,33 +179,45 @@ try {
       LMSSetValue(element, value) { calls.push(["LMSSetValue", element, value]); values[element] = value; save(); return "true"; }, LMSCommit(value) { calls.push(["LMSCommit", value]); save(); return "true"; }, LMSFinish(value) { calls.push(["LMSFinish", value]); return "true"; },
     };
   });
-  const completePage = await completeContext.newPage(); monitor(completePage, "earned completion LMS");
-  await completePage.goto(baseUrl, { waitUntil: "networkidle" });
-  for (const section of await completePage.locator("[data-progress-section]").all()) { await section.evaluate((element) => element.scrollIntoView({ block: "center", behavior: "instant" })); await completePage.waitForTimeout(120); }
-  await exerciseRequiredInteractions(completePage);
-  await completePage.locator("#complete").evaluate((element) => element.scrollIntoView({ block: "center", behavior: "instant" }));
-  await completePage.waitForTimeout(250);
-  try { await completePage.waitForFunction(() => document.querySelector(".return-button")?.classList.contains("is-ready"), undefined, { timeout: 3000 }); } catch { errors.push("return control did not unlock after all requirements"); }
-  await completePage.evaluate(() => { window.__lmsCalls.length = 0; });
-  await completePage.locator(".return-button").click();
-  const completionResult = await completePage.evaluate(() => ({ calls: window.__lmsCalls, values: window.__lmsValues }));
-  const completedIndex = completionResult.calls.findIndex(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "completed");
-  const commitIndex = completionResult.calls.findIndex(([method], index) => method === "LMSCommit" && index > completedIndex);
-  const finishIndex = completionResult.calls.findIndex(([method], index) => method === "LMSFinish" && index > commitIndex);
-  if (completedIndex < 0 || commitIndex < 0 || finishIndex < 0) errors.push("earned completion did not set, commit and finish in order");
-  if (completionResult.values["cmi.core.lesson_status"] !== "completed" || completionResult.values["cmi.core.exit"] !== "") errors.push("earned completion values were not retained");
-  await completePage.reload({ waitUntil: "networkidle" });
-  if ((await completePage.evaluate(() => window.__lmsValues["cmi.core.lesson_status"])) !== "completed") errors.push("completed LMS state did not survive reopen");
-  const restartedChallenge = completePage.locator("branching-challenge");
+  const standardPage = await standardContext.newPage(); monitor(standardPage, "Oracle launch-completion LMS");
+  await standardPage.goto(baseUrl, { waitUntil: "networkidle" });
+  const launchResult = await standardPage.evaluate(() => ({ calls: [...window.__lmsCalls], values: { ...window.__lmsValues } }));
+  const initializeIndex = launchResult.calls.findIndex(([method]) => method === "LMSInitialize");
+  const launchCompletedIndex = launchResult.calls.findIndex(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "completed");
+  const launchCommitIndex = launchResult.calls.findIndex(([method], index) => method === "LMSCommit" && index > launchCompletedIndex);
+  if (initializeIndex < 0 || launchCompletedIndex <= initializeIndex || launchCommitIndex <= launchCompletedIndex || launchResult.values["cmi.core.lesson_status"] !== "completed" || launchResult.values["cmi.core.exit"] !== "") errors.push("SCORM did not mark completed and commit immediately after successful initialization");
+  if (launchResult.calls.some((call) => /score|mastery|passed|failed/i.test(call.join(" ")))) errors.push("SCORM launch emitted score or pass/fail data");
+
+  await standardPage.locator(".return-copy").scrollIntoViewIfNeeded();
+  await standardPage.waitForTimeout(250);
+  await standardPage.evaluate(() => { window.__lmsCalls.length = 0; });
+  await standardPage.locator(".course-footer").hover();
+  await standardPage.locator(".return-copy").evaluate((element) => element.click());
+  const hoveredFooterStyle = await standardPage.locator(".return-copy").evaluate((element) => ({ decoration: getComputedStyle(element).textDecorationLine, borderBottom: getComputedStyle(element).borderBottomWidth }));
+  if (hoveredFooterStyle.decoration !== "none" || hoveredFooterStyle.borderBottom !== "0px") errors.push("footer gains an underline or border on hover");
+  await standardPage.waitForTimeout(100);
+  if ((await standardPage.evaluate(() => window.__lmsCalls.length)) !== 0) errors.push("footer interaction or visibility produced LMS traffic");
+
+  for (const section of await standardPage.locator("[data-progress-section]").all()) { await section.evaluate((element) => element.scrollIntoView({ block: "center", behavior: "instant" })); await standardPage.waitForTimeout(120); }
+  await exerciseRequiredInteractions(standardPage);
+  const activityStatusWrites = await standardPage.evaluate(() => window.__lmsCalls.filter(([method, element]) => method === "LMSSetValue" && (element === "cmi.core.lesson_status" || /score/i.test(element))));
+  if (activityStatusWrites.length) errors.push("content activity changed LMS completion or score state");
+
+  const closeResult = await standardPage.evaluate(() => { window.__lmsCalls.length = 0; const first = window.CourseSCORM.finish(); const second = window.CourseSCORM.finish(); return { first, second, calls: [...window.__lmsCalls], values: { ...window.__lmsValues } }; });
+  if (!closeResult.first || !closeResult.second || closeResult.calls.filter(([method]) => method === "LMSFinish").length !== 1 || closeResult.values["cmi.core.lesson_status"] !== "completed" || closeResult.values["cmi.core.exit"] !== "") errors.push("SCORM closure did not preserve completion with one guarded LMSFinish");
+
+  await standardPage.reload({ waitUntil: "networkidle" });
+  if ((await standardPage.evaluate(() => window.__lmsValues["cmi.core.lesson_status"])) !== "completed") errors.push("completed LMS state did not survive reopen");
+  const restartedChallenge = standardPage.locator("branching-challenge");
   const restartedFirstPart = restartedChallenge.locator('[data-part="0"]');
   if (!(await restartedChallenge.isVisible()) || !(await restartedFirstPart.isVisible()) || await restartedChallenge.locator('[aria-pressed="true"]').count() || (await restartedFirstPart.locator(".interaction-feedback").innerText()).trim() || !(await restartedFirstPart.locator(".challenge-next").isDisabled())) errors.push("Final Challenge did not restart cleanly at Part 1 after reopen");
-  const storedChallengeState = await completePage.evaluate(() => window.CourseState.getInteraction("final-challenge-activity"));
+  const storedChallengeState = await standardPage.evaluate(() => window.CourseState.getInteraction("final-challenge-activity"));
   if (storedChallengeState?.complete !== true || "current" in storedChallengeState || "answers" in storedChallengeState) errors.push("Final Challenge stored step or answer progress instead of completion only");
-  await completeContext.close();
+  await standardContext.close();
 } finally {
   await browser.close();
   if (server) await new Promise((resolve) => server.close(resolve));
 }
 
 if (errors.length) { console.error(errors.join("\n")); process.exitCode = 1; }
-else console.log("Payflex on oneX verification passed: content, assets, 11 responsive widths, mouse/keyboard/touch controls, instant retry-until-correct knowledge checks, correct sort, mixed-answer reset-on-load challenge, local/LMS completion persistence, incomplete exit, earned completion, commit-before-finish, navigation and scroll-to-top.");
+else console.log("Payflex on oneX verification passed: content, assets, 11 responsive widths, static LMS-independent footer, launch completion with immediate commit, one guarded finish, mouse/keyboard/touch controls, knowledge checks, product sort, mixed-answer reset-on-load challenge, navigation and scroll-to-top.");

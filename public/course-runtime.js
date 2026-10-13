@@ -4,6 +4,7 @@
   var api = null;
   var initialized = false;
   var finished = false;
+  var finishAttempted = false;
   var sessionStartedAt = 0;
   var lessonStatus = "";
   var totalTime = "";
@@ -60,14 +61,14 @@
     totalTime = String(call("LMSGetValue", "cmi.core.total_time") || "");
     entry = String(call("LMSGetValue", "cmi.core.entry") || "").toLowerCase();
     lessonLocation = String(call("LMSGetValue", "cmi.core.lesson_location") || "");
-    if (!lessonStatus || lessonStatus === "not attempted" || lessonStatus === "unknown") {
-      if (String(call("LMSSetValue", "cmi.core.lesson_status", "incomplete")).toLowerCase() !== "true") {
+    if (lessonStatus !== "completed") {
+      if (String(call("LMSSetValue", "cmi.core.lesson_status", "completed")).toLowerCase() !== "true") {
         lastCommitSucceeded = false;
         return true;
       }
-      lessonStatus = "incomplete";
+      lessonStatus = "completed";
     }
-    if (String(call("LMSSetValue", "cmi.core.exit", lessonStatus === "completed" || lessonStatus === "passed" ? "" : "suspend")).toLowerCase() !== "true") {
+    if (String(call("LMSSetValue", "cmi.core.exit", "")).toLowerCase() !== "true") {
       lastCommitSucceeded = false;
       return true;
     }
@@ -152,7 +153,9 @@
     return lastCommitSucceeded;
   }
   function finish() {
-    if (!initialized || finished) return true;
+    if (!initialized) return true;
+    if (finishAttempted) return finished;
+    finishAttempted = true;
     lessonStatus = String(call("LMSGetValue", "cmi.core.lesson_status") || lessonStatus).toLowerCase();
     updateSessionTime();
     if (String(call("LMSSetValue", "cmi.core.exit", lessonStatus === "completed" || lessonStatus === "passed" ? "" : "suspend")).toLowerCase() !== "true") {

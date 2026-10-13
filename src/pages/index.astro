@@ -107,15 +107,14 @@ import CourseLayout from "../layouts/CourseLayout.astro";
           <BranchingFinalChallenge {...courseData.finalChallenge} />
         </section>
 
-        <section class="completion-section container" id="complete" data-progress-section>
+        <section class="completion-section container" id="complete">
           <h2>{courseData.completion.heading}</h2>
           <div class="completion-copy">
             <p class="completion-reminder"><strong>Remember:</strong> {courseData.completion.reminder.replace("Remember: ", "")}</p>
             <p>{courseData.completion.resources}</p>
           </div>
           <footer class="course-footer">
-            <button class="return-button" type="button">{courseData.completion.returnLabel}</button>
-            <p class="sr-only return-status" id="return-help" aria-live="polite"></p>
+            <p class="return-copy">{courseData.completion.returnLabel}</p>
           </footer>
         </section>
       </div>
@@ -130,7 +129,6 @@ import CourseLayout from "../layouts/CourseLayout.astro";
     type SavedProgress = {
       version?: number;
       currentSection?: string;
-      completed?: boolean;
       viewedSections?: string[];
       interactions?: Record<string, any>;
     };
@@ -140,17 +138,12 @@ import CourseLayout from "../layouts/CourseLayout.astro";
     const navToggle = document.querySelector<HTMLButtonElement>(".nav-toggle");
     const links = document.querySelector<HTMLElement>(".course-links");
     const backToTop = document.querySelector<HTMLAnchorElement>(".back-to-top");
-    const returnButton = document.querySelector<HTMLButtonElement>(".return-button");
-    const returnStatus = document.querySelector<HTMLElement>(".return-status");
     const sectionLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>(".course-links a"));
     const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-progress-section]"));
-    const requiredSectionIds = sections.map((section) => section.id);
-    const allowedSectionIds = new Set(requiredSectionIds);
+    const allowedSectionIds = new Set(sections.map((section) => section.id));
     const sectionById = new Map(sections.map((section) => [section.id, section]));
-    const requiredKnowledgeChecks = ["kc-tender-order", "kc-excluded-products", "kc-refund", "kc-support"];
     const suspendDataLimit = 4096;
     const scormReady = scorm?.initialize?.() ?? false;
-    const lmsStatus = scormReady ? String(scorm?.getLessonStatus?.() || "").toLowerCase() : "";
 
     const validSectionId = (value: unknown): value is string => typeof value === "string" && sectionById.has(value);
     const validStringList = (value: unknown) => Array.isArray(value)
@@ -164,7 +157,6 @@ import CourseLayout from "../layouts/CourseLayout.astro";
       return {
         version: 1,
         ...(currentSection ? { currentSection } : {}),
-        completed: source.completed === true,
         viewedSections: validStringList(source.viewedSections),
         interactions,
       };
@@ -182,15 +174,13 @@ import CourseLayout from "../layouts/CourseLayout.astro";
       savedProgress.currentSection = resumeSection;
       savedProgress.viewedSections = [...new Set([...(savedProgress.viewedSections || []), resumeSection])];
     }
-    if (lmsStatus === "completed" || lmsStatus === "passed") savedProgress.completed = true;
-
     let lastCommittedFingerprint = "";
     let lastSaveSucceeded: boolean | null = null;
     const serializedProgress = () => {
       savedProgress = normalizeProgress(savedProgress);
       const fullState = JSON.stringify(savedProgress);
       if (fullState.length <= suspendDataLimit) return fullState;
-      return JSON.stringify({ version: 1, currentSection: savedProgress.currentSection, completed: savedProgress.completed });
+      return JSON.stringify({ version: 1, currentSection: savedProgress.currentSection });
     };
     const persistProgress = () => {
       const serialized = serializedProgress();
@@ -203,27 +193,11 @@ import CourseLayout from "../layouts/CourseLayout.astro";
       return lastSaveSucceeded;
     };
 
-    const completionRequirementsMet = () => {
-      if (savedProgress.completed) return true;
-      const viewed = new Set(savedProgress.viewedSections || []);
-      const interactions = savedProgress.interactions || {};
-      return requiredSectionIds.every((id) => viewed.has(id))
-        && requiredKnowledgeChecks.every((id) => interactions[id]?.submitted === true)
-        && interactions["allowed-excluded-sort"]?.complete === true
-        && interactions["final-challenge-activity"]?.complete === true;
-    };
-    const updateReturnState = () => {
-      const ready = completionRequirementsMet();
-      returnButton?.classList.toggle("is-ready", ready);
-      returnButton?.setAttribute("aria-disabled", String(!ready));
-      if (returnStatus && ready) returnStatus.textContent = "";
-    };
-
     (window as any).CourseState = {
       getInteraction: (id: string) => savedProgress.interactions?.[id],
       setInteraction: (id: string, value: unknown) => {
         savedProgress.interactions = { ...(savedProgress.interactions || {}), [id]: value };
-        persistProgress(); updateReturnState();
+        persistProgress();
       },
     };
     window.dispatchEvent(new CustomEvent("course-state-ready"));
@@ -254,32 +228,16 @@ import CourseLayout from "../layouts/CourseLayout.astro";
         const activeLink = sectionLinks.find((link) => link.getAttribute("href") === `#${nextSection}` || document.querySelector(link.getAttribute("href") || "")?.contains(sectionById.get(nextSection) || null));
         if (activeLink) sectionLinks.forEach((link) => link.classList.toggle("active", link === activeLink));
         if (JSON.stringify(savedProgress) !== previous) persistProgress();
-        updateReturnState();
       }, { rootMargin: "-15% 0px -40%", threshold: [0, .05, .3] });
       sections.forEach((section) => observer.observe(section));
       if (restoredBookmarkGuard) window.setTimeout(() => { restoredBookmarkGuard = undefined; }, 250);
     };
     ["wheel", "touchstart", "pointerdown", "keydown"].forEach((eventName) => window.addEventListener(eventName, () => { restoredBookmarkGuard = undefined; }, { once: true, passive: true }));
 
-    returnButton?.addEventListener("click", () => {
-      if (!completionRequirementsMet()) {
-        if (returnStatus) returnStatus.textContent = "Complete all sections, submit all four knowledge checks, finish the product sort and successfully complete the Final Challenge before returning.";
-        return;
-      }
-      savedProgress.completed = true;
-      persistProgress();
-      const completed = !scormReady || (scorm?.setCompleted?.() ?? false);
-      if (!completed) { if (returnStatus) { returnStatus.textContent = "Your completion could not be saved. Please try again before closing the course."; returnStatus.focus(); } return; }
-      if (scormReady) scorm?.finish?.();
-      if (returnStatus) returnStatus.textContent = "Completion saved. Returning to People Connect.";
-      window.setTimeout(() => { if (window.opener) window.close(); }, 100);
-    });
-
     const restoredElement = resumeSection ? sectionById.get(resumeSection) : undefined;
     if (restoredElement) {
       const restoreOnce = () => { restoredElement.scrollIntoView({ behavior: "auto", block: "start" }); requestAnimationFrame(() => requestAnimationFrame(startProgressObservers)); };
       if (document.readyState === "complete") restoreOnce(); else window.addEventListener("load", restoreOnce, { once: true });
     } else startProgressObservers();
-    updateReturnState();
   </script>
 </CourseLayout>

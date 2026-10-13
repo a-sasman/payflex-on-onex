@@ -266,9 +266,9 @@ const lmsWindow = {
 };
 lmsWindow.parent = lmsWindow;
 vm.runInNewContext(wrapper, { window: lmsWindow });
-if (lmsCalls.some(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "completed")) {
-  throw new Error("SCORM wrapper completed the course automatically on launch");
-}
+const launchCompletedIndex = lmsCalls.findIndex(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "completed");
+const launchCommitIndex = lmsCalls.findIndex(([method], index) => method === "LMSCommit" && index > launchCompletedIndex);
+if (launchCompletedIndex < 0 || launchCommitIndex < 0) throw new Error("SCORM wrapper did not complete and commit immediately after launch");
 lmsWindow.CourseSCORM.setSuspendData('{"current":3,"completed":true}');
 lmsWindow.CourseSCORM.setCompleted();
 const completionStatus = lmsWindow.CourseSCORM.getCompletionStatus();
@@ -278,13 +278,10 @@ lmsListeners.pagehide();
 const statuses = lmsCalls
   .filter(([method, element]) => method === "LMSSetValue" && element === "cmi.core.lesson_status")
   .map(([, , value]) => value);
-if (!statuses.includes("incomplete") || !statuses.includes("completed")) throw new Error("SCORM earned-completion lifecycle validation failed");
-const incompleteWriteIndex = lmsCalls.findIndex(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "incomplete");
-const incompleteCommitIndex = lmsCalls.findIndex(([method], index) => method === "LMSCommit" && index > incompleteWriteIndex);
-if (incompleteWriteIndex < 0 || incompleteCommitIndex < 0) throw new Error("SCORM incomplete launch status was not committed");
+if (!statuses.includes("completed") || statuses.includes("incomplete")) throw new Error("SCORM launch-completion lifecycle validation failed");
 const completedWriteIndex = lmsCalls.findIndex(([method, element, value]) => method === "LMSSetValue" && element === "cmi.core.lesson_status" && value === "completed");
 const completionCommitIndex = lmsCalls.findIndex(([method], index) => method === "LMSCommit" && index > completedWriteIndex);
-if (completedWriteIndex < 0 || completionCommitIndex < 0) throw new Error("SCORM earned completion was not committed");
+if (completedWriteIndex < 0 || completionCommitIndex < 0) throw new Error("SCORM launch completion was not committed");
 if (completionStatus !== "completed") throw new Error("SCORM completion status alias validation failed");
 if (totalTime !== "0001:02:03.45") throw new Error("SCORM total time retrieval validation failed");
 const sessionTimes = lmsCalls

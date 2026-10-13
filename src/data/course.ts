@@ -210,6 +210,6 @@ export const courseData = {
     heading: "Well done. You can now apply the Payflex rules on oneX.",
     reminder: "Remember: other tenders first, Payflex last. Check the basket for excluded products. Refunds do not go back to Payflex and are not paid in cash.",
     resources: "Keep the oneX navigation guide and Payflex FAQ close by when you need a quick reminder.",
-    returnLabel: "Return to People Connect",
+    returnLabel: "Return to People Connect to continue",
   },
 };

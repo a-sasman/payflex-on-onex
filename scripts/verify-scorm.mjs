@@ -35,37 +35,38 @@ const fresh = launch({
   "cmi.core.lesson_location": "",
   "cmi.core.total_time": "0000:00:00.00",
 });
-assert.equal(fresh.values["cmi.core.lesson_status"], "incomplete");
-assert.equal(fresh.values["cmi.core.exit"], "suspend");
-assert.equal(find(fresh.calls, "LMSSetValue", "cmi.core.lesson_status", "completed"), -1);
-const incompleteWrite = find(fresh.calls, "LMSSetValue", "cmi.core.lesson_status", "incomplete");
-assert.ok(incompleteWrite >= 0 && find(fresh.calls, "LMSCommit", undefined, undefined, incompleteWrite) > incompleteWrite);
+assert.equal(fresh.values["cmi.core.lesson_status"], "completed");
+assert.equal(fresh.values["cmi.core.exit"], "");
+const completedOnLaunch = find(fresh.calls, "LMSSetValue", "cmi.core.lesson_status", "completed");
+assert.ok(completedOnLaunch > find(fresh.calls, "LMSInitialize"));
+assert.ok(find(fresh.calls, "LMSCommit", undefined, undefined, completedOnLaunch) > completedOnLaunch);
+assert.equal(fresh.course.getLastCommitSucceeded(), true);
 
 fresh.calls.length = 0;
 const middleState = JSON.stringify({ version: 1, currentSection: "exclusions", viewedSections: ["welcome", "exclusions"] });
 assert.equal(fresh.course.saveProgress(middleState, "exclusions"), true);
 assert.equal(fresh.values["cmi.suspend_data"], middleState);
 assert.equal(fresh.values["cmi.core.lesson_location"], "exclusions");
-assert.equal(fresh.values["cmi.core.lesson_status"], "incomplete");
-assert.equal(fresh.values["cmi.core.exit"], "suspend");
-assert.equal(find(fresh.calls, "LMSSetValue", "cmi.core.lesson_status", "completed"), -1);
+assert.equal(fresh.values["cmi.core.lesson_status"], "completed");
+assert.equal(fresh.values["cmi.core.exit"], "");
+assert.equal(count(fresh.calls, "LMSSetValue", "cmi.core.lesson_status"), 0);
 
-const incompleteResume = launch({ ...fresh.values, "cmi.core.entry": "resume" });
-assert.equal(incompleteResume.course.getSuspendData(), middleState);
-assert.equal(incompleteResume.course.getLessonStatus(), "incomplete");
-assert.equal(find(incompleteResume.calls, "LMSSetValue", "cmi.core.lesson_status", "completed"), -1);
-incompleteResume.calls.length = 0;
-assert.equal(incompleteResume.listeners.pagehide(), true);
-assert.equal(incompleteResume.values["cmi.core.lesson_status"], "incomplete");
-assert.equal(incompleteResume.values["cmi.core.exit"], "suspend");
-assert.equal(count(incompleteResume.calls, "LMSCommit"), 1);
-assert.equal(count(incompleteResume.calls, "LMSFinish"), 1);
+const completedResume = launch({ ...fresh.values, "cmi.core.entry": "resume" });
+assert.equal(completedResume.course.getSuspendData(), middleState);
+assert.equal(completedResume.course.getLessonStatus(), "completed");
+assert.equal(find(completedResume.calls, "LMSSetValue", "cmi.core.lesson_status", "incomplete"), -1);
+assert.equal(find(completedResume.calls, "LMSSetValue", "cmi.core.lesson_status", "completed"), -1);
+completedResume.calls.length = 0;
+assert.equal(completedResume.listeners.pagehide(), true);
+assert.equal(completedResume.listeners.beforeunload(), true);
+assert.equal(completedResume.values["cmi.core.lesson_status"], "completed");
+assert.equal(completedResume.values["cmi.core.exit"], "");
+assert.equal(count(completedResume.calls, "LMSCommit"), 1);
+assert.equal(count(completedResume.calls, "LMSFinish"), 1);
 
 fresh.calls.length = 0;
 assert.equal(fresh.course.setCompleted(), true);
-const completedWrite = find(fresh.calls, "LMSSetValue", "cmi.core.lesson_status", "completed");
-const completedCommit = find(fresh.calls, "LMSCommit", undefined, undefined, completedWrite);
-assert.ok(completedWrite >= 0 && completedCommit > completedWrite);
+assert.equal(count(fresh.calls, "LMSSetValue", "cmi.core.lesson_status"), 0);
 assert.equal(fresh.values["cmi.core.lesson_status"], "completed");
 assert.equal(fresh.values["cmi.core.exit"], "");
 
@@ -88,12 +89,12 @@ assert.equal(reopened.course.saveProgress(oversized, "complete"), false);
 assert.equal(count(reopened.calls, "LMSSetValue"), 0);
 assert.equal(count(reopened.calls, "LMSCommit"), 0);
 
-const failing = launch({ "cmi.core.lesson_status": "incomplete", "cmi.core.lesson_location": "returns" }, { commitFails: true });
-assert.equal(failing.values["cmi.core.lesson_status"], "incomplete");
-assert.equal(failing.course.setCompleted(), false);
-assert.equal(failing.values["cmi.core.lesson_status"], "incomplete");
-assert.equal(failing.values["cmi.core.exit"], "suspend");
+const failing = launch({ "cmi.core.lesson_status": "not attempted", "cmi.core.lesson_location": "returns" }, { commitFails: true });
+assert.equal(failing.values["cmi.core.lesson_status"], "completed");
+assert.equal(failing.course.getLastCommitSucceeded(), false);
+failing.calls.length = 0;
 assert.equal(failing.listeners.pagehide(), false);
+assert.equal(failing.listeners.beforeunload(), false);
 assert.equal(count(failing.calls, "LMSFinish"), 0);
 
 const unavailable = launch({}, { initializeFails: true });
@@ -101,4 +102,4 @@ assert.equal(unavailable.course.initialize(), false);
 assert.equal(unavailable.listeners.pagehide(), true);
 assert.equal(count(unavailable.calls, "LMSFinish"), 0);
 
-console.log("SCORM 1.2 API verification passed: incomplete launch, progress persistence, suspend exit, earned completion commit, completed close, resume, commit-failure protection, and API-unavailable fallback.");
+console.log("SCORM 1.2 API verification passed: launch completion and immediate commit, progress persistence without status changes, completed close, guarded finish, resume, commit-failure protection, and API-unavailable fallback.");
